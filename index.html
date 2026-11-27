@@ -73,7 +73,7 @@ textarea.in{padding:12px 14px;min-height:110px;resize:vertical;line-height:1.55}
 .stars svg{width:26px;height:26px;stroke:var(--ink);stroke-width:1.3}
 .bpm{font-family:var(--serif);font-size:clamp(64px,12vw,96px);line-height:.85}
 .panel{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:18px 0;margin-top:22px}
-.stage{position:relative;width:100%;max-width:480px;margin:0 auto;padding:84px 0 8px;touch-action:pan-x;outline:none}
+.stage{position:relative;width:100%;max-width:480px;margin:0 auto;padding:84px 0 8px;outline:none}
 .amb{position:absolute;left:4%;right:4%;top:22%;bottom:-6%;filter:blur(70px) saturate(1.4);opacity:.45;pointer-events:none;overflow:hidden;border-radius:50%}
 .amb>*{width:100%;height:100%;object-fit:cover;display:block}
 .stack{position:relative;width:76%;aspect-ratio:1;margin-left:4%}
@@ -92,11 +92,6 @@ textarea.in{padding:12px 14px;min-height:110px;resize:vertical;line-height:1.55}
 @keyframes fromBack{from{transform:translateY(-22px) scale(.95);filter:brightness(.6)}to{transform:none;filter:none}}
 @keyframes fromFront{from{transform:translateY(46px);opacity:0}to{transform:none;opacity:1}}
 @keyframes discOut{from{transform:translateX(-32%)}to{transform:none}}
-.strip{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:10px 4px 16px;margin-top:22px;scrollbar-width:thin}
-.strip button{flex:none;width:76px;height:76px;padding:0;border:0;border-radius:3px;overflow:hidden;background:#1a1918;scroll-snap-align:center;opacity:.55;transition:opacity .2s,transform .2s}
-.strip button img{width:100%;height:100%;object-fit:cover;display:block}
-.strip button[aria-current=true]{opacity:1;outline:1px solid var(--ink);outline-offset:3px}
-.strip button:hover{opacity:.9}
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:#0a0a0a;padding:10px 18px;border-radius:999px;font-size:14px;font-weight:500;z-index:90;opacity:0;transition:opacity .25s;pointer-events:none}
 .toast.on{opacity:1}
 @media(min-width:900px){.toast{bottom:32px}}
@@ -380,17 +375,14 @@ function vBac(s){
  <div style="display:flex;align-items:center;gap:12px"><a class="ico" href="#bacs" aria-label="Retour aux bacs"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
  <div><h1 style="font-size:clamp(32px,5vw,44px)">${esc(b.g)}</h1><p class="lab">${b.rs.length} disques · rangés par artiste</p></div></div>
  <div class="grid2" style="margin-top:6px;align-items:center">
-  <div class="stage" id="stage" tabindex="0" aria-label="Bac : flèches pour feuilleter, Entrée pour sortir le disque"></div>
+  <div class="stage" id="stage" tabindex="0" aria-label="Bac : flèches gauche et droite pour feuilleter, Entrée pour sortir le disque"></div>
   <div>
    <div id="info"></div>
    <div style="display:flex;gap:10px;margin-top:22px;flex-wrap:wrap"><button class="ico" id="prev" aria-label="Pochette précédente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><button class="ico" id="next" aria-label="Pochette suivante"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button><a class="btn" id="open">Sortir du bac</a></div>
-   <p class="note" style="margin-top:14px">Glisse sur la pochette ou utilise les flèches pour feuilleter.</p>
+   <p class="note" style="margin-top:14px">Utilise les flèches pour feuilleter.</p>
   </div>
  </div>
- <div class="strip" id="strip" role="list" aria-label="Pochettes du bac">${b.rs.map((r, j) => `<button role="listitem" data-j="${j}" aria-label="${esc(r.a)} — ${esc(r.t)}" style="background:${coverCss(r)}">${im(r)}</button>`).join('')}</div>
- <h2 class="sec" style="margin-bottom:14px">Tout le bac</h2>
- <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:26px 18px">${b.rs.map(r => `<a href="#disque-${esc(r.id)}" style="text-decoration:none">${cover(r, 150, 'width:100%;height:auto;aspect-ratio:1;box-shadow:0 14px 30px rgba(0,0,0,.6)')}<span class="ell" style="display:block;margin-top:10px;font:400 20px/1.1 var(--serif)">${esc(r.t)}</span><span class="ell small mut" style="display:block">${esc(r.a)}</span></a>`).join('')}</div>`;
- const strip = $('#strip');
+</div>`;
  const draw = dir => {
   const i = crateIdx[s], r = b.rs[i], behind = b.rs.slice(i + 1, i + 5);
   $('#stage').innerHTML = `<div class="amb" aria-hidden="true">${im(r) || `<div style="background:${coverCss(r)}"></div>`}</div>
@@ -401,17 +393,10 @@ function vBac(s){
   $('#info').innerHTML = `<p class="lab">${esc(r.a)}${r.y ? ' · ' + esc(r.y) : ''}</p><h2 style="font-size:clamp(36px,4.4vw,52px);margin-top:6px">${esc(r.t)}</h2>${r.l ? `<p class="small mut" style="margin:10px 0 0">${esc(r.l)}</p>` : ''}<p class="small dim" style="margin:6px 0 0">${i + 1} sur ${b.rs.length}${tr.length ? ` · ${rated} titre${rated > 1 ? 's' : ''} noté${rated > 1 ? 's' : ''} sur ${tr.length}` : ''}</p>`;
   $('#open').href = '#disque-' + r.id;
   $('#prev').disabled = i === 0; $('#next').disabled = i === b.rs.length - 1;
-  strip.querySelectorAll('button').forEach(x => x.setAttribute('aria-current', +x.dataset.j === i));
-  const cur = strip.querySelector(`[data-j="${i}"]`);
-  if (cur) strip.scrollTo({ left: cur.offsetLeft - strip.clientWidth / 2 + cur.clientWidth / 2, behavior: 'smooth' });
  };
  const go = d => { const n = Math.max(0, Math.min(b.rs.length - 1, crateIdx[s] + d)); if (n === crateIdx[s]) return; crateIdx[s] = n; draw(d > 0 ? 'next' : 'prev'); };
  $('#prev').onclick = () => go(-1); $('#next').onclick = () => go(1);
- strip.onclick = e => { const x = e.target.closest('button'); if (!x) return; const j = +x.dataset.j, d = j - crateIdx[s]; if (!d) { location.hash = 'disque-' + b.rs[j].id; return; } crateIdx[s] = j; draw(d > 0 ? 'next' : 'prev'); };
- const st = $('#stage'); let p0 = null;
- st.addEventListener('keydown', e => { if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); go(1); } if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); go(-1); } if (e.key === 'Enter') location.hash = 'disque-' + b.rs[crateIdx[s]].id; });
- st.addEventListener('touchstart', e => { p0 = [e.touches[0].clientX, e.touches[0].clientY]; }, { passive: true });
- st.addEventListener('touchend', e => { if (!p0) return; const dx = e.changedTouches[0].clientX - p0[0], dy = e.changedTouches[0].clientY - p0[1]; p0 = null; const m = Math.abs(dx) > Math.abs(dy) ? dx : dy; if (Math.abs(m) > 30) { e.preventDefault(); go(m < 0 ? 1 : -1); } });
+ $('#stage').addEventListener('keydown', e => { if (e.key === 'ArrowRight') { e.preventDefault(); go(1); } if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); } if (e.key === 'Enter') location.hash = 'disque-' + b.rs[crateIdx[s]].id; });
  draw();
 }
 
