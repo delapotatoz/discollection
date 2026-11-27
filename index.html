@@ -92,6 +92,15 @@ textarea.in{padding:12px 14px;min-height:110px;resize:vertical;line-height:1.55}
 @keyframes fromBack{from{transform:translateY(-22px) scale(.95);filter:brightness(.6)}to{transform:none;filter:none}}
 @keyframes fromFront{from{transform:translateY(46px);opacity:0}to{transform:none;opacity:1}}
 @keyframes discOut{from{transform:translateX(-32%)}to{transform:none}}
+.bins{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:30px 26px}
+.bin{display:block;text-decoration:none;outline-offset:6px}
+.binv{position:relative;aspect-ratio:1;margin:46px 7% 0}
+.bk{transform:translateY(calc(var(--j) * -13px)) scale(calc(1 - var(--j) * .05));transform-origin:50% 0;filter:brightness(calc(.62 - var(--j) * .12));z-index:calc(10 - var(--j))}
+.bf{z-index:12;box-shadow:0 26px 50px rgba(0,0,0,.8);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.bin:hover .bf,.bin:focus-visible .bf{transform:translateY(-16px)}
+.binn{font:400 25px/1.1 var(--serif)}
+@media(max-width:600px){.bins{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 16px}.binv{margin-top:34px}.binn{font-size:19px}.binf{padding-bottom:9px}.bk{transform:translateY(calc(var(--j) * -9px)) scale(calc(1 - var(--j) * .05))}}
+.binf{position:absolute;left:-8%;right:-8%;bottom:-1px;height:34%;z-index:13;display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding:0 6% 12px;background:var(--bg);border-top:1px solid #3a3733}
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:#0a0a0a;padding:10px 18px;border-radius:999px;font-size:14px;font-weight:500;z-index:90;opacity:0;transition:opacity .25s;pointer-events:none}
 .toast.on{opacity:1}
 @media(min-width:900px){.toast{bottom:32px}}
@@ -355,8 +364,11 @@ function vBacs(){
  </div>
  <label class="field sec"><span>Chercher un disque ou un artiste</span><input class="in" id="q" type="search" autocomplete="off" placeholder="Kaya Dread, Nuit Bleue…"></label>
  <ul class="list" id="res" style="margin-top:12px"></ul>
- <h2 class="sec" style="margin-bottom:12px">Tous les bacs</h2>
- <ul class="list">${B.map(b => `<li><a class="rowl" href="#bac-${esc(b.s)}"><span style="flex:1;font:400 26px var(--serif)">${esc(b.g)}</span><span class="small mut">${b.rs.length}</span><span style="display:flex">${b.rs.slice(0, 3).map((r, j) => cover(r, 34, `margin-left:${j ? -12 : 0}px;box-shadow:0 0 0 2px #0a0a0a`)).join('')}</span></a></li>`).join('')}</ul>`;
+ <h2 class="sec" style="margin-bottom:6px">Tous les bacs</h2>
+ <div class="bins">${B.map(b => { const f = b.rs[0], back = b.rs.slice(1, 4); return `<a class="bin" href="#bac-${esc(b.s)}" aria-label="Bac ${esc(b.g)}, ${b.rs.length} disques">
+  <div class="binv" aria-hidden="true">${back.map((x, j) => `<span class="sl bk" style="--j:${j + 1};background:${coverCss(x)}">${x.img && !LIMITED ? `<img src="${esc(x.img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}</span>`).reverse().join('')}
+  <span class="sl bf" style="background:${coverCss(f)}">${f.img && !LIMITED ? `<img src="${esc(f.img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}</span>
+  <span class="binf"><span class="ell binn">${esc(b.g)}</span><span class="small dim" style="flex:none">${b.rs.length}</span></span></div></a>`; }).join('')}</div>`;
  const q = $('#q'), res = $('#res');
  q.addEventListener('input', () => {
   const v = norm(q.value);
