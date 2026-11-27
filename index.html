@@ -383,8 +383,8 @@ function bins(){
 }
 const NKEY = /^(.+):(\d+)$/;
 const isTrackKey = k => NKEY.test(k) && !k.startsWith('bac:') && !k.startsWith('set:');
-function trackOf(r, i, n){ if (r.tr && r.tr[i]) return r.tr[i]; if (n && n.tn) return { p: n.tp || '', n: n.tn, d: n.td || '' }; return null; }
-function withMeta(k, n){ const m = NKEY.exec(k); if (!m || !isTrackKey(k)) return n; const r = byId(m[1]), t = r && r.tr && r.tr[+m[2]]; return t ? Object.assign(n, { tn: t.n, tp: t.p, td: t.d }) : n; }
+function trackOf(r, i, n){ if (r.tr && r.tr[i]) return r.tr[i]; if (n && n.tn) return { p: n.tp || '', n: n.tn, d: n.td || '', a: n.ta || '' }; return null; }
+function withMeta(k, n){ const m = NKEY.exec(k); if (!m || !isTrackKey(k)) return n; const r = byId(m[1]), t = r && r.tr && r.tr[+m[2]]; return t ? Object.assign(n, { tn: t.n, tp: t.p, td: t.d }, t.a ? { ta: t.a } : {}) : n; }
 let trackFill = null;
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 function fillMissing(rs){
@@ -439,15 +439,19 @@ async function discogsIdentity(token){
  if (!res.ok) throw new Error('Discogs a répondu ' + res.status + '. Réessaie dans un instant.');
  return res.json();
 }
+const isVarious = r => /^various\b/i.test(String(r.a || '').trim());
+const dzName = a => String(a || '').replace(/\s*\(\d+\)$/, '').replace(/\*$/, '').trim();
 async function loadTracks(r){
- if (r.tr || !r.did || !CAN_NET) return r.tr || [];
+ // r.tv = 2 : tracklist lue avec l'artiste de chaque morceau (nécessaire pour les compilations)
+ if ((r.tr && (r.tv === 2 || !isVarious(r))) || !r.did || !CAN_NET) return r.tr || [];
  const j = await dget('/releases/' + r.did);
- r.tr = (j.tracklist || []).filter(t => (t.type_ || 'track') === 'track').map(t => ({ p:t.position || '', n:t.title || '', d:t.duration || '' }));
- saveLib(); return r.tr;
+ r.tr = (j.tracklist || []).filter(t => (t.type_ || 'track') === 'track').map(t => ({ p:t.position || '', n:t.title || '', d:t.duration || '', a: (t.artists || []).map(x => dzName(x.anv || x.name)).filter(Boolean)[0] || '' }));
+ r.tv = 2; saveLib(); return r.tr;
 }
+function lookupArtist(r, t){ if (t && t.a) return t.a; return isVarious(r) ? '' : dzName(String(r.a || '').split(',')[0]); }
 async function trackLookup(r, t, want){
  if (!sb || !session) throw new Error('Connecte-toi pour la recherche automatique du BPM.');
- const { data, error } = await sb.functions.invoke('bpm', { body: { title: t.n, artist: String(r.a || '').split(',')[0], want } });
+ const { data, error } = await sb.functions.invoke('bpm', { body: { title: t.n, artist: lookupArtist(r, t), want } });
  if (error) {
   let st = 0, d = '';
   try { const c = error.context; if (c) { st = c.status || 0; const j = await c.clone().json().catch(() => null); d = j ? (j.error || j.message || j.msg || '') : ''; } } catch (e) {}
@@ -469,8 +473,8 @@ async function autoBpm(r, onUpdate){
  try {
   for (let i = 0; i < r.tr.length; i++) {
    const k = key(r.id, i); if (note(k).b || GSB_MISS.has(k)) continue;
-   try { const x = await gsbLookup(r, r.tr[i]); const p = { b: x.b, k: x.k, src: x.src, t: Date.now() }; if (x.du && !r.tr[i].d) p.du = x.du; NOTES[k] = withMeta(k, Object.assign({}, note(k), p)); saveNotes(k); if (onUpdate) onUpdate(i); }
-   catch (e) { if (/absent/.test(e.message)) { if (e.du && !r.tr[i].d && NOTES[k]) { NOTES[k] = withMeta(k, Object.assign({}, note(k), { du: e.du, t: Date.now() })); saveNotes(k); } GSB_MISS.add(k); ls.set('bpmmiss', [...GSB_MISS].slice(-5000)); } else break; }
+   try { const x = await gsbLookup(r, r.tr[i]); const p = { b: x.b, k: x.k, src: x.src, t: Date.now() }; if (x.du && !r.tr[i].d) Object.assign(p, { du: x.du, dv: 2 }); p.bv = 2; NOTES[k] = withMeta(k, Object.assign({}, note(k), p)); saveNotes(k); if (onUpdate) onUpdate(i); }
+   catch (e) { if (/absent/.test(e.message)) { if (e.du && !r.tr[i].d && NOTES[k]) { NOTES[k] = withMeta(k, Object.assign({}, note(k), { du: e.du, dv: 2, t: Date.now() })); saveNotes(k); } GSB_MISS.add(k); ls.set('bpmmiss', [...GSB_MISS].slice(-5000)); } else break; }
    await new Promise(res => setTimeout(res, 250));
   }
  } finally { autoRun = null; }
@@ -634,6 +638,7 @@ async function vDisque(id){
   const mr = $('#mvr'); if (mr) mr.onclick = () => put(raw);
  };
  let tr = r.tr;
+ if (tr && isVarious(r) && r.tv !== 2) { try { tr = await loadTracks(r); } catch (e) {} }
  if (!tr) { try { tr = await loadTracks(r); } catch (e) { $('#tl').innerHTML = `<li class="note" style="padding:16px 0">${esc(e.message)}</li>`; return; } }
  if (location.hash.slice(1) !== 'disque-' + id) return;
  const drawTl = () => {
@@ -700,7 +705,7 @@ function vTitre(id, i){
   tool.onclick = e => { const b = e.target.closest('[data-b]'); if (!b) return; putBpm(+b.dataset.b, src); tool.innerHTML = ''; };
  };
  const gsb = $('#gsb');
- if (gsb) gsb.onclick = async () => { gsb.disabled = true; gsb.textContent = 'Recherche…'; try { const x = await gsbLookup(r, t); putBpm(x.b, x.src, Object.assign({ k: x.k }, x.du && !t.d ? { du: x.du } : {})); } catch (e) { if (/absent/.test(e.message)) { GSB_MISS.add(k); ls.set('bpmmiss', [...GSB_MISS].slice(-5000)); $('#src').textContent = 'Introuvable sur GetSongBPM et Deezer : mesure-le au micro, sur un enregistrement ou en tapant le tempo.'; } else { $('#src').textContent = e.message; flash(e.message, 6000); } } gsb.disabled = false; gsb.textContent = 'Chercher le BPM'; };
+ if (gsb) gsb.onclick = async () => { gsb.disabled = true; gsb.textContent = 'Recherche…'; try { const x = await gsbLookup(r, t); putBpm(x.b, x.src, Object.assign({ k: x.k, bv: 2 }, x.du && !t.d ? { du: x.du, dv: 2 } : {})); } catch (e) { if (/absent/.test(e.message)) { GSB_MISS.add(k); ls.set('bpmmiss', [...GSB_MISS].slice(-5000)); $('#src').textContent = 'Introuvable sur GetSongBPM et Deezer : mesure-le au micro, sur un enregistrement ou en tapant le tempo.'; } else { $('#src').textContent = e.message; flash(e.message, 6000); } } gsb.disabled = false; gsb.textContent = 'Chercher le BPM'; };
  if (gsb && !n.b && !GSB_MISS.has(k)) gsb.click();
  const mic = $('#mic');
  if (mic) mic.onclick = async () => {
@@ -725,15 +730,24 @@ function vTitre(id, i){
 }
 
 const fmtClock = s => { const m = Math.floor(s / 60), x = Math.round(s % 60); return m + ':' + String(x).padStart(2, '0'); };
-const durOf = (t, n) => (t && t.d) || (n && n.du ? fmtClock(n.du) : '');
-const DUR_MISS = new Set(ls.get('durmiss', []));
+const durOf = (t, n) => (t && t.d) || (n && n.du && n.dv === 2 ? fmtClock(n.du) : '');
+const DUR_MISS = new Set(ls.get('durmiss2', []));
 let durFill = null;
 function fillDurations(items){
  if (durFill || !session) return;
- const todo = items.filter(x => !durOf(x.t, x.n) && !DUR_MISS.has(x.k)); if (!todo.length) return;
+ const todo = items.filter(x => (!durOf(x.t, x.n) && !DUR_MISS.has(x.k)) || (isVarious(x.r) && x.n.b && /Deezer|GetSongBPM/.test(x.n.src || '') && x.n.bv !== 2)); if (!todo.length) return;
  durFill = (async () => {
   for (const x of todo) {
-   try { const d = await trackLookup(x.r, x.t, ['duration']); if (d.duration > 0) { NOTES[x.k] = withMeta(x.k, Object.assign({}, note(x.k), { du: d.duration, t: Date.now() })); saveNotes(x.k); } else { DUR_MISS.add(x.k); ls.set('durmiss', [...DUR_MISS].slice(-5000)); } }
+   try {
+    if (isVarious(x.r) && !(x.t && x.t.a)) { await loadTracks(x.r).catch(() => {}); if (x.r.tr && x.r.tr[x.i]) x.t = x.r.tr[x.i]; }
+    const n0 = note(x.k), recheck = isVarious(x.r) && n0.b && /Deezer|GetSongBPM/.test(n0.src || '') && n0.bv !== 2;
+    const d = await trackLookup(x.r, x.t, recheck ? ['bpm', 'duration'] : ['duration']);
+    const p = { t: Date.now() };
+    if (d.duration > 0) Object.assign(p, { du: d.duration, dv: 2 }); else { DUR_MISS.add(x.k); ls.set('durmiss2', [...DUR_MISS].slice(-5000)); }
+    if (recheck) { p.bv = 2; if (d.found) Object.assign(p, { b: d.bpm, k: d.key || '', src: d.source || 'Deezer' }); }
+    const nn = Object.assign({}, n0, p); if (recheck && !d.found) { delete nn.b; delete nn.src; delete nn.k; }
+    NOTES[x.k] = withMeta(x.k, nn); saveNotes(x.k);
+   }
    catch (e) { break; }
    await new Promise(res => setTimeout(res, 300));
   }
@@ -781,7 +795,7 @@ function vNotes(){
  <ul class="list" id="rows">${rows.map(x => `<li style="display:grid;grid-template-columns:44px 56px minmax(0,1fr) 46px;gap:14px;align-items:center;min-height:72px">
   ${cover(x.r, 44)}
   <span style="font:400 30px/1 var(--serif)">${x.n.b ? esc(x.n.b) : '—'}</span>
-  <a href="#titre-${esc(x.r.id)}-${x.i}" style="text-decoration:none"><span class="ell" style="display:block;font-size:16px;font-weight:400">${esc(x.t.n)}</span><span class="ell small mut" style="display:block">${x.n.s ? `<span style="letter-spacing:.1em">${starTxt(x.n.s)}</span> · ` : ''}<b style="color:var(--ink);font-weight:500">Face ${esc(x.t.p)}</b> · ${esc(x.r.a)} · ${esc(x.r.t)}${durOf(x.t, x.n) ? ' · ' + esc(durOf(x.t, x.n)) : ''}</span>${x.n.c ? `<span class="ell small dim" style="display:block;font-style:italic">« ${esc(x.n.c)} »</span>` : ''}</a>
+  <a href="#titre-${esc(x.r.id)}-${x.i}" style="text-decoration:none"><span class="ell" style="display:block;font-size:16px;font-weight:400">${esc(x.t.n)}</span><span class="ell small mut" style="display:block">${x.n.s ? `<span style="letter-spacing:.1em">${starTxt(x.n.s)}</span> · ` : ''}<b style="color:var(--ink);font-weight:500">Face ${esc(x.t.p)}</b> · ${esc(x.t.a || x.r.a)} · ${esc(x.r.t)}${durOf(x.t, x.n) ? ' · ' + esc(durOf(x.t, x.n)) : ''}</span>${x.n.c ? `<span class="ell small dim" style="display:block;font-style:italic">« ${esc(x.n.c)} »</span>` : ''}</a>
   <button class="ico ${x.n.set ? 'on' : ''}" data-k="${esc(x.k)}" aria-label="${x.n.set ? 'Retirer' : 'Ajouter'} ${esc(x.t.n)} ${x.n.set ? 'du' : 'au'} sound system">${x.n.set ? '✓' : '+'}</button></li>`).join('') || '<li class="note" style="padding:18px 0">Aucun titre ne correspond. Note des titres depuis tes bacs.</li>'}</ul>`;
  $('#fr').onclick = e => { const b = e.target.closest('button'); if (b) { sys.r = +b.dataset.j; vNotes(); } };
  $('#fs').onclick = e => { const b = e.target.closest('button'); if (b) { sys.min = +b.dataset.v; vNotes(); } };
@@ -822,7 +836,7 @@ function vSound(){
     <span class="ss-n">${i + 1}</span>
     ${cover(x.r, 46)}
     <span class="ss-f" aria-label="Face ${esc(x.t.p || 'inconnue')}"><b>${esc(x.t.p || '?')}</b><span>face</span></span>
-    <a class="ss-t" href="#titre-${esc(x.r.id)}-${x.i}"><span class="ell" style="display:block;font-size:16px;font-weight:400">${esc(x.t.n)}</span><span class="ell small mut" style="display:block">${esc(x.r.a)} · ${esc(x.r.t)}</span></a>
+    <a class="ss-t" href="#titre-${esc(x.r.id)}-${x.i}"><span class="ell" style="display:block;font-size:16px;font-weight:400">${esc(x.t.n)}</span><span class="ell small mut" style="display:block">${esc(x.t.a || x.r.a)} · ${esc(x.r.t)}</span></a>
     <span class="ss-b"><b>${x.n.b || '—'}</b><span class="small dim">${dlt ? (dlt > 0 ? '+' : '') + dlt : 'BPM'}</span></span>
     <span class="ss-d"><span>${esc(durOf(x.t, x.n) || '—')}</span></span>
     <button class="ss-x" data-k="${esc(x.k)}" aria-label="Retirer ${esc(x.t.n)} du sound system"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -870,7 +884,7 @@ function vSound(){
  list.addEventListener('pointerup', end); list.addEventListener('pointercancel', end);
  list.addEventListener('keydown', e => { const g = e.target.closest('.grip'); if (!g) return; const i = [...list.children].indexOf(g.closest('li')); if (e.key === 'ArrowUp' && i > 0) { e.preventDefault(); moveSet(i, i - 1, true); } if (e.key === 'ArrowDown' && i < list.children.length - 1) { e.preventDefault(); moveSet(i, i + 1, true); } });
  list.addEventListener('click', e => { const x = e.target.closest('.ss-x'); if (!x) return; toggleSet(x.dataset.k); rerender(); });
- $('#copy').onclick = async () => { const txt = `Sound system — ${chosen.length} titres${secs ? ' · ' + fmtDur(secs) : ''}\n` + chosen.map((x, i) => `${i + 1}. ${x.n.b || '—'} BPM · ${x.t.n} — ${x.r.a} (${x.r.t}, ${x.t.p})${durOf(x.t, x.n) ? ' · ' + durOf(x.t, x.n) : ''}${x.n.c ? ' · ' + x.n.c : ''}`).join('\n') + `\n\nDisques à sortir : ` + [...discs.values()].map(d => `${d.r.t} (${d.p.join(', ')})`).join(' · '); try { await navigator.clipboard.writeText(txt); flash('Liste copiée'); } catch (e) { flash('Copie refusée par le navigateur'); } };
+ $('#copy').onclick = async () => { const txt = `Sound system — ${chosen.length} titres${secs ? ' · ' + fmtDur(secs) : ''}\n` + chosen.map((x, i) => `${i + 1}. ${x.n.b || '—'} BPM · ${x.t.n} — ${x.t.a || x.r.a} (${x.r.t}, ${x.t.p})${durOf(x.t, x.n) ? ' · ' + durOf(x.t, x.n) : ''}${x.n.c ? ' · ' + x.n.c : ''}`).join('\n') + `\n\nDisques à sortir : ` + [...discs.values()].map(d => `${d.r.t} (${d.p.join(', ')})`).join(' · '); try { await navigator.clipboard.writeText(txt); flash('Liste copiée'); } catch (e) { flash('Copie refusée par le navigateur'); } };
  const cl = $('#clear');
  cl.onclick = () => { if (!cl.dataset.ok) { cl.dataset.ok = 1; cl.textContent = 'Confirmer'; return; } chosen.forEach(x => { NOTES[x.k] = Object.assign({}, x.n, { set: false, t: Date.now() }); }); NOTES['set:order'] = { order: [], t: Date.now() }; saveNotes([...chosen.map(x => x.k), 'set:order']); vSound(); };
 }
