@@ -11,11 +11,10 @@ L'appli compagnon de ta collection de vinyles : relie ton compte Discogs, note e
 - Reconnaissance du titre qui tourne (facultatif, avec un jeton AudD).
 - « Préparer un système » : filtre tes titres par tempo, note et moment, et liste les disques à sortir.
 
-## Réglages (page Profil)
-- **Discogs** : ton nom d'utilisateur et un jeton personnel (Discogs › Paramètres › Développeurs).
-- **GetSongBPM** : une clé API gratuite sur https://getsongbpm.com/api
-- **AudD** (facultatif) : un jeton sur https://audd.io
-
-Les jetons et tes notes restent dans ton navigateur.
+## Comptes et données
+- Comptes et notes : Supabase (tables dans `supabase.sql`, chacun ne voit que ses données).
+- Discogs : chaque utilisateur relie sa collection avec son jeton personnel pendant l'arrivée.
+- BPM : la fonction `supabase/functions/bpm` interroge GetSongBPM avec la clé de l'appli, rangée dans les secrets Supabase (`GETSONGBPM_KEY`). Les utilisateurs n'ont rien à saisir.
+- AudD (facultatif) : un jeton dans le Profil pour reconnaître le titre qui tourne.
 
 Tempo et tonalité fournis par [GetSongBPM.com](https://getsongbpm.com). Collection et pochettes via Discogs.
