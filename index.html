@@ -397,7 +397,16 @@ async function loadTracks(r){
 async function gsbLookup(r, t){
  if (!sb || !session) throw new Error('Connecte-toi pour la recherche automatique du BPM.');
  const { data, error } = await sb.functions.invoke('bpm', { body: { title: t.n, artist: String(r.a || '').split(',')[0] } });
- if (error) throw new Error('Recherche du BPM indisponible pour le moment.');
+ if (error) {
+  let st = 0, d = '';
+  try { const c = error.context; if (c) { st = c.status || 0; const j = await c.clone().json().catch(() => null); d = j ? (j.error || j.message || j.msg || '') : ''; } } catch (e) {}
+  const why = st === 404 ? 'la fonction « bpm » est introuvable dans Supabase (pas déployée, ou un autre nom)'
+   : st === 401 ? 'Supabase refuse l’appel (vérification du jeton de connexion)'
+   : /absente des secrets/.test(d) ? 'le secret GETSONGBPM_KEY manque dans Supabase'
+   : /GetSongBPM a répondu (401|403)/.test(d) ? 'GetSongBPM refuse la clé (clé erronée ou pas encore activée)'
+   : d ? d : st ? 'erreur ' + st : (error.message || 'fonction injoignable');
+  throw new Error('BPM : ' + why);
+ }
  if (!data || !data.found) throw new Error('Titre absent de GetSongBPM');
  return { b: data.bpm, k: data.key || '' };
 }
@@ -643,7 +652,7 @@ function vTitre(id, i){
   tool.onclick = e => { const b = e.target.closest('[data-b]'); if (!b) return; putBpm(+b.dataset.b, src); tool.innerHTML = ''; };
  };
  const gsb = $('#gsb');
- if (gsb) gsb.onclick = async () => { gsb.disabled = true; gsb.textContent = 'Recherche…'; try { const x = await gsbLookup(r, t); putBpm(x.b, 'GetSongBPM', { k: x.k }); } catch (e) { if (/absent/.test(e.message)) { GSB_MISS.add(k); ls.set('gsbmiss', [...GSB_MISS].slice(-5000)); $('#src').textContent = 'Absent de GetSongBPM : mesure-le au micro, sur un enregistrement ou en tapant le tempo.'; } else flash(e.message); } gsb.disabled = false; gsb.textContent = 'Chercher sur GetSongBPM'; };
+ if (gsb) gsb.onclick = async () => { gsb.disabled = true; gsb.textContent = 'Recherche…'; try { const x = await gsbLookup(r, t); putBpm(x.b, 'GetSongBPM', { k: x.k }); } catch (e) { if (/absent/.test(e.message)) { GSB_MISS.add(k); ls.set('gsbmiss', [...GSB_MISS].slice(-5000)); $('#src').textContent = 'Absent de GetSongBPM : mesure-le au micro, sur un enregistrement ou en tapant le tempo.'; } else { $('#src').textContent = e.message; flash('Recherche du BPM impossible'); } } gsb.disabled = false; gsb.textContent = 'Chercher sur GetSongBPM'; };
  if (gsb && !n.b && !GSB_MISS.has(k)) gsb.click();
  const mic = $('#mic');
  if (mic) mic.onclick = async () => {
