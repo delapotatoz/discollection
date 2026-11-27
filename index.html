@@ -267,7 +267,11 @@ function flushNotes(){
  return writing;
 }
 function saveLib(){ if (session) ls.set('lib.' + uid(), LIB); }
+function acctMsg(e){ const m = String((e && e.message) || e || ''); return /relation|does not exist|schema cache|PGRST2/i.test(m) ? 'Les tables Supabase manquent : lance le code SQL dans le SQL Editor de ton projet.' : /row-level security|permission denied|42501/i.test(m) ? 'Supabase refuse l’accès au profil : vérifie les règles (policies) du code SQL.' : 'Supabase : ' + (m || 'erreur inconnue'); }
+let acctErr = '';
+async function ensureProfile(){ if (profile) return; try { await loadAccount(); acctErr = ''; } catch (e) { acctErr = acctMsg(e); throw new Error(acctErr); } }
 async function saveProfile(patch){
+ await ensureProfile();
  Object.assign(profile, patch);
  const { error } = await sb.from('profiles').update(Object.assign({}, patch, { updated_at: new Date().toISOString() })).eq('id', uid());
  if (error) throw new Error('Profil non enregistré : ' + error.message);
@@ -338,7 +342,9 @@ function cover(r, px, extra){
 const starTxt = s => s ? '★'.repeat(s) + '☆'.repeat(5 - s) : '';
 const starSvg = on => `<svg viewBox="0 0 24 24" fill="${on ? '#efe6d2' : 'none'}" aria-hidden="true"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1 6.3L12 17.5 6.5 20.4l1-6.3L3 9.7l6.2-.9z"/></svg>`;
 const RANG = [['genre','Par genre'],['style','Par style'],['label','Par label'],['decennie','Par décennie']];
-function groupOf(r){
+const bacKey = r => 'bac:' + S.rangement + ':' + r.id;
+function groupOf(r){ const o = NOTES[bacKey(r)]; return o && o.to ? o.to : groupRaw(r); }
+function groupRaw(r){
  const m = S.rangement;
  if (m === 'style') return r.st || r.g || 'Divers';
  if (m === 'label') return r.ln || String(r.l || '').split(' · ')[0] || 'Sans label';
@@ -508,7 +514,7 @@ document.addEventListener('keydown', e => {
 function vBac(s){
  const b = bins().find(x => x.s === s);
  if (!b) { location.hash = 'bacs'; return; }
- if (crateIdx[s] == null) crateIdx[s] = 0;
+ if (crateIdx[s] == null || crateIdx[s] > b.rs.length - 1) crateIdx[s] = 0;
  const im = r => r.img && !LIMITED ? `<img src="${esc(r.img)}" alt="" referrerpolicy="no-referrer">` : '';
  V.innerHTML = `
  <div style="display:flex;align-items:center;gap:12px"><a class="ico" href="#bacs" aria-label="Retour aux bacs"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
@@ -543,15 +549,30 @@ function vBac(s){
 
 async function vDisque(id){
  const r = byId(id); if (!r) { location.hash = 'bacs'; return; }
- const b = slug(r.g || 'Divers');
+ const b = slug(groupOf(r));
  V.innerHTML = `
  <a class="btn2" href="#bac-${esc(b)}" style="margin-bottom:18px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 19V5M5 12l7 7 7-7"/></svg>Remettre dans le bac</a>
  <div class="grid2">
   <div>${cover(r, 320, 'width:min(100%,360px);height:auto;aspect-ratio:1;box-shadow:0 30px 60px rgba(0,0,0,.85)')}
-   <p class="lab" style="margin-top:22px">${esc(r.a)} · ${esc(r.y)}</p><h1 style="margin-top:6px">${esc(r.t)}</h1><p class="small mut" style="margin:10px 0 0">${esc(r.l)}</p></div>
+   <p class="lab" style="margin-top:22px">${esc(r.a)} · ${esc(r.y)}</p><h1 style="margin-top:6px">${esc(r.t)}</h1><p class="small mut" style="margin:10px 0 0">${esc(r.l)}</p>
+   <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)"><span class="small mut">Rangé dans <b style="color:var(--ink);font-weight:500">${esc(groupOf(r))}</b>${NOTES[bacKey(r)] ? ' · déplacé par toi' : ''}</span><button class="btn2" id="mv" aria-expanded="false">Changer de bac</button></div><div id="mvz"></div></div>
   <div><h2 style="margin-bottom:12px">Tracklist</h2><ol class="list" id="tl"><li class="note" style="padding:16px 0">Chargement de la tracklist…</li></ol>
   <p class="note" style="margin-top:12px">Touche un titre pour le noter, le commenter et retrouver son BPM.</p></div>
  </div>`;
+ const mv = $('#mv'), mvz = $('#mvz');
+ mv.onclick = () => {
+  if (mvz.innerHTML) { mvz.innerHTML = ''; mv.setAttribute('aria-expanded', 'false'); return; }
+  mv.setAttribute('aria-expanded', 'true');
+  const cur = groupOf(r), raw = groupRaw(r), names = bins().map(x => x.g).filter(g => g !== cur);
+  mvz.innerHTML = `<p class="small mut" style="margin:16px 0 10px">Choisis le bac où ranger ce disque :</p>
+  <div class="pills" id="mvp">${names.map(g => `<button class="pill" data-g="${esc(g)}">${esc(g)}</button>`).join('')}</div>
+  <form id="mvf" style="display:flex;gap:8px;margin-top:12px"><label style="flex:1"><span class="sr">Nouveau bac</span><input class="in" id="mvn" maxlength="40" placeholder="Ou crée un nouveau bac…"></label><button class="btn2">Créer</button></form>
+  ${cur !== raw ? `<button class="linkb" id="mvr" style="margin-left:0">Remettre dans son bac d’origine (${esc(raw)})</button>` : ''}`;
+  const put = g => { g = String(g || '').trim().slice(0, 40); if (!g) return; const k = bacKey(r); if (g === raw) { delete NOTES[k]; if (session) sb.from('notes').delete().eq('user_id', uid()).eq('k', k).then(() => {}); saveNotes(); } else { NOTES[k] = { to: g, t: Date.now() }; saveNotes(k); } flash('Rangé dans ' + g); vDisque(id); };
+  $('#mvp').onclick = e => { const x = e.target.closest('button'); if (x) put(x.dataset.g); };
+  $('#mvf').onsubmit = e => { e.preventDefault(); put($('#mvn').value); };
+  const mr = $('#mvr'); if (mr) mr.onclick = () => put(raw);
+ };
  let tr = r.tr;
  if (!tr) { try { tr = await loadTracks(r); } catch (e) { $('#tl').innerHTML = `<li class="note" style="padding:16px 0">${esc(e.message)}</li>`; return; } }
  if (location.hash.slice(1) !== 'disque-' + id) return;
@@ -704,8 +725,17 @@ function frErr(e){
 function busy(btn, on, label){ if (!btn) return; if (on) { btn.dataset.l = btn.textContent; btn.textContent = label || 'Un instant…'; btn.disabled = true; } else { btn.textContent = btn.dataset.l || btn.textContent; btn.disabled = false; } }
 function pwToggles(){ document.querySelectorAll('.pwt').forEach(b => b.onclick = () => { const i = b.previousElementSibling, show = i.type === 'password'; i.type = show ? 'text' : 'password'; b.textContent = show ? 'Masquer' : 'Afficher'; b.setAttribute('aria-label', (show ? 'Masquer' : 'Afficher') + ' le mot de passe'); }); }
 const pwField = (id, label, ac) => `<label class="field"><span>${label}</span><span class="pw"><input class="in" id="${id}" type="password" autocomplete="${ac}" minlength="8" required><button type="button" class="pwt" aria-label="Afficher le mot de passe">Afficher</button></span></label>`;
-async function afterLogin(){ try { await loadAccount(); } catch (e) { throw new Error(/relation|does not exist|schema cache|PGRST/i.test(String(e && e.message)) ? 'Le compte n’est pas encore prêt côté serveur : les tables Supabase manquent.' : frErr(e)); } setMode(); location.hash = profile.onboarded ? 'bacs' : 'etape-discogs'; if (profile.onboarded) { flash('Content de te revoir' + (profile.pseudo ? ', ' + profile.pseudo : '')); bgImport(); } }
+async function afterLogin(){ try { await loadAccount(); acctErr = ''; } catch (e) { acctErr = acctMsg(e); route(); return; } setMode(); location.hash = profile.onboarded ? 'bacs' : 'etape-discogs'; if (profile.onboarded) { flash('Content de te revoir' + (profile.pseudo ? ', ' + profile.pseudo : '')); bgImport(); } }
 
+function vAcctErr(){
+ V.innerHTML = `${obHead('')}
+ <h1>Ton compte n’a pas pu <i class="s">s’ouvrir</i></h1>
+ <p class="mut" style="margin:12px 0 0">Tu es bien connecté${session && session.user && session.user.email ? ` en tant que <b style="color:var(--ink);font-weight:500">${esc(session.user.email)}</b>` : ''}, mais ton profil n’a pas pu être chargé.</p>
+ <p class="err">${esc(acctErr || 'Erreur inconnue.')}</p>
+ <div class="obb"><button class="btn" id="retry">Réessayer</button><button class="btn2" id="lo">Se déconnecter</button></div>`;
+ $('#retry').onclick = async () => { const b = $('#retry'); busy(b, true, 'Chargement…'); try { await loadAccount(); acctErr = ''; setMode(); location.hash = profile.onboarded ? 'bacs' : 'etape-discogs'; route(); if (profile.onboarded) bgImport(); } catch (e) { acctErr = acctMsg(e); vAcctErr(); } };
+ $('#lo').onclick = async () => { await sb.auth.signOut().catch(() => {}); session = null; profile = null; acctErr = ''; location.hash = 'bienvenue'; route(); };
+}
 function vWelcome(){
  const fan = DEMO.filter((r, i) => [0, 12, 8, 3, 14].includes(i));
  V.innerHTML = `
@@ -746,7 +776,7 @@ function vSignup(){
    const { data, error } = await sb.auth.signUp({ email: em, password: pw, options: { data: { pseudo: ps }, emailRedirectTo: location.origin + location.pathname } });
    if (error) throw error;
    if (data.user && Array.isArray(data.user.identities) && !data.user.identities.length) throw new Error('already registered');
-   if (data.session) { session = data.session; await loadAccount(); if (!profile.pseudo) await saveProfile({ pseudo: ps }); setMode(); location.hash = 'etape-discogs'; }
+   if (data.session) { session = data.session; try { await loadAccount(); acctErr = ''; } catch (e2) { acctErr = acctMsg(e2); route(); return; } if (!profile.pseudo) await saveProfile({ pseudo: ps }); setMode(); location.hash = 'etape-discogs'; }
    else { pendingEmail = em; location.hash = 'verifie'; }
   } catch (err) { er.textContent = frErr(err); busy(go, false); }
  };
@@ -944,6 +974,7 @@ function setMode(){ const t = $('#modeTag'); t.innerHTML = !session && DEMO_ON &
 function route(){
  let h = location.hash.slice(1); let m;
  if (/access_token=|error_description=|type=recovery/.test(h)) return;
+ if (session && !profile) { document.body.classList.add('ob'); window.scrollTo(0, 0); vAcctErr(); return; }
  const authed = !!session, onboarded = !!(authed && profile && profile.onboarded);
  if (!authed) { if (!DEMO_ON && !OB.includes(h)) h = 'bienvenue'; if (STEPS.includes(h)) h = DEMO_ON ? 'bacs' : 'bienvenue'; }
  else if (!onboarded) { if (!STEPS.includes(h) && h !== 'nouveau-mdp') h = 'etape-discogs'; }
@@ -983,7 +1014,7 @@ async function boot(){
   try { const { data } = await sb.auth.getSession(); session = data.session; } catch (e) { session = null; }
   if (/error_description=/.test(h0)) { bootMsg = decodeURIComponent(((h0.match(/error_description=([^&]+)/) || [])[1] || '').replace(/\+/g, ' ')); if (/expired|invalid/i.test(bootMsg)) bootMsg = 'Ce lien a expiré. Connecte-toi ou demande-en un nouveau.'; history.replaceState(null, '', location.pathname + '#bienvenue'); }
   else if (/access_token=/.test(h0)) history.replaceState(null, '', location.pathname + (/type=recovery/.test(h0) ? '#nouveau-mdp' : '#'));
-  if (session) { try { await loadAccount(); } catch (e) { bootMsg = /relation|does not exist|schema cache|PGRST/i.test(String(e && e.message)) ? 'Le compte n’est pas encore prêt côté serveur : les tables Supabase manquent.' : 'Impossible de charger ton compte : ' + frErr(e); session = null; } }
+  if (session) { try { await loadAccount(); } catch (e) { acctErr = acctMsg(e); profile = null; } }
  }
  if (!session && DEMO_ON) enterDemo();
  setMode(); route();
