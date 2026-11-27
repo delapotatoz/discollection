@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Discollection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: calme et nocturne, une pochette éclairée dans une pièce sombre
+   IDEA: le bac du disquaire, et la fiche qu'on glisse dans chaque pochette
+   PICTURE: le bac de pochettes empilées, celle qu'on sort levée au-dessus des autres
+   COLOUR and TYPE: noir #0a0a0a, crème #efe6d2, gris chauds ; Instrument Serif + Inter 300 ; les pochettes seules en couleur
+   LAYOUT: barre latérale au-dessus de 900px, onglets en bas sur téléphone, colonne de 1100px */
+:root{color-scheme:dark;--bg:#0a0a0a;--ink:#efe6d2;--mut:#a89f8e;--dim:#8a8274;--line:#2a2826;--soft:#1d1c1a;--card:#111110;--serif:'Instrument Serif',Georgia,serif}
+:root[data-theme=light],:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font:300 16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.app{display:flex;min-height:100vh}
+.side{display:none}
+main{flex:1;padding:20px max(4vw,18px) 120px;max-width:1140px;margin:0 auto;width:100%}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px max(4vw,18px) 0}
+.brand{font-family:var(--serif);font-size:26px;text-decoration:none;letter-spacing:-.01em}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;justify-content:space-around;padding:8px 8px calc(14px + env(safe-area-inset-bottom));background:rgba(10,10,10,.96);border-top:1px solid var(--soft)}
+.tab{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:72px;min-height:48px;justify-content:center;text-decoration:none;color:var(--dim);font-size:12px}
+.tab[aria-current=page]{color:var(--ink);font-weight:500}
+.tab svg,.nav svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.5}
+@media(min-width:900px){
+ .top,.tabs{display:none}
+ .side{display:flex;flex-direction:column;gap:4px;width:250px;flex:none;padding:30px 22px;border-right:1px solid var(--soft);position:sticky;top:0;height:100vh}
+ .side .brand{margin-bottom:26px}
+ .nav{display:flex;align-items:center;gap:12px;min-height:46px;padding:0 12px;border-radius:999px;text-decoration:none;color:var(--dim)}
+ .nav[aria-current=page]{color:var(--ink);background:var(--card)}
+ .side .credit{margin-top:auto}
+ main{padding:40px 48px 80px}
+}
+h1,h2,h3{font-family:var(--serif);font-weight:400;margin:0;line-height:1.05;text-wrap:balance}
+h1{font-size:clamp(40px,6vw,56px);letter-spacing:-.02em}
+h2{font-size:clamp(28px,3.4vw,34px)}
+i.s{font-style:italic}
+.lab{font-size:13px;color:var(--mut);margin:0}
+.mut{color:var(--mut)}.dim{color:var(--dim)}
+.small{font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:0 22px;border-radius:999px;border:0;background:var(--ink);color:#0a0a0a;font-weight:500;font-size:15px;text-decoration:none;white-space:nowrap}
+.btn2{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;border-radius:999px;border:1px solid #3a3733;background:transparent;font-size:14px;text-decoration:none;white-space:nowrap}
+.btn2[disabled],.btn[disabled]{opacity:.4;cursor:not-allowed}
+.ico{width:46px;height:46px;border-radius:50%;border:1px solid #3a3733;background:transparent;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.ico.on{background:var(--ink);color:#0a0a0a;border-color:var(--ink)}
+.ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6}
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{min-height:42px;padding:0 15px;border-radius:999px;border:1px solid var(--line);background:transparent;font-size:14px}
+.pill[aria-pressed=true],.pill[aria-checked=true]{background:var(--ink);color:#0a0a0a;border-color:var(--ink);font-weight:500}
+.list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.list>li{border-bottom:1px solid var(--soft)}
+.rowl{display:flex;align-items:center;gap:14px;min-height:64px;padding:8px 0;text-decoration:none}
+.cv{position:relative;overflow:hidden;border-radius:2px;background:#1a1918;flex:none}
+.cv img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.grid2{display:grid;gap:clamp(24px,4vw,56px);grid-template-columns:minmax(0,1fr)}
+@media(min-width:760px){.grid2{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}}
+.sec{margin-top:44px}
+.field{display:block;margin-top:14px}
+.field span{display:block;font-size:13px;color:var(--mut);margin-bottom:6px}
+.in{width:100%;min-height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:16px;outline:none}
+textarea.in{padding:12px 14px;min-height:110px;resize:vertical;line-height:1.55}
+.in:focus{border-color:#5a554d}
+.stars{display:flex;margin-left:-8px}
+.stars button{width:46px;height:46px;border:0;background:transparent;display:flex;align-items:center;justify-content:center}
+.stars svg{width:26px;height:26px;stroke:var(--ink);stroke-width:1.3}
+.bpm{font-family:var(--serif);font-size:clamp(64px,12vw,96px);line-height:.85}
+.panel{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:18px 0;margin-top:22px}
+.crate{position:relative;height:430px;perspective:900px;max-width:440px;margin:10px auto 0;touch-action:pan-x}
+.crate-in{position:absolute;inset:0 40px 0 0;transform:rotateX(8deg);transform-origin:50% 100%}
+.sleeve{position:absolute;left:50%;width:240px;height:240px;margin-left:-120px;border-radius:2px;transition:top .35s ease,filter .35s ease;display:block;overflow:hidden;background:#1a1918}
+.sleeve img{width:100%;height:100%;object-fit:cover}
+.front{position:absolute;left:-20px;right:-20px;bottom:0;height:126px;background:var(--bg);border-top:1px solid #3a3733;z-index:80;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 16px}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:#0a0a0a;padding:10px 18px;border-radius:999px;font-size:14px;font-weight:500;z-index:90;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.on{opacity:1}
+@media(min-width:900px){.toast{bottom:32px}}
+.listen{position:relative;width:200px;height:200px;margin:20px auto}
+.listen i{position:absolute;inset:0;border-radius:50%;border:1px solid var(--ink);animation:ring 2.4s ease-out infinite}
+.listen i:nth-child(2){animation-delay:.8s}.listen i:nth-child(3){animation-delay:1.6s}
+.listen b{position:absolute;inset:64px;border-radius:50%;background:var(--ink);color:#0a0a0a;display:flex;align-items:center;justify-content:center;font:400 28px var(--serif)}
+@keyframes ring{0%{transform:scale(.55);opacity:.9}100%{transform:scale(1.2);opacity:0}}
+.tapbox{width:100%;min-height:120px;border-radius:16px;border:1px dashed #5a554d;background:var(--card);font-size:15px}
+.tapbox:active{background:#1a1918}
+.credit{font-size:12px;color:var(--dim);line-height:1.5}
+.credit a{color:var(--mut)}
+.note{font-size:13px;color:var(--dim)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side" aria-label="Navigation">
+<a class="brand" href="#bacs">Discollection</a>
+<a class="nav" data-tab="bacs" href="#bacs"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="1"/><path d="M7 8V4h10v4"/></svg>Bacs</a>
+<a class="nav" data-tab="systeme" href="#systeme"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="7" height="18" rx="1"/><rect x="13" y="3" width="7" height="18" rx="1"/><circle cx="7.5" cy="15" r="2"/><circle cx="16.5" cy="15" r="2"/></svg>Système</a>
+<a class="nav" data-tab="profil" href="#profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profil</a>
+<p class="credit">Tempo et tonalité fournis par <a href="https://getsongbpm.com">GetSongBPM.com</a>. Collection via Discogs.</p>
+</aside>
+<div style="flex:1;min-width:0">
+<div class="top"><a class="brand" href="#bacs">Discollection</a><span id="modeTag" class="note"></span></div>
+<main id="view" aria-live="polite"></main>
+</div>
+</div>
+<nav class="tabs" aria-label="Principal">
+<a class="tab" data-tab="bacs" href="#bacs"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="1"/><path d="M7 8V4h10v4"/></svg>Bacs</a>
+<a class="tab" data-tab="systeme" href="#systeme"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="7" height="18" rx="1"/><rect x="13" y="3" width="7" height="18" rx="1"/><circle cx="7.5" cy="15" r="2"/><circle cx="16.5" cy="15" r="2"/></svg>Système</a>
+<a class="tab" data-tab="profil" href="#profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profil</a>
+</nav>
+<div class="toast" id="toast" role="status"></div>
+<script>
+{
+const $ = s => document.querySelector(s);
+const V = $('#view');
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const framed = (() => { try { return window.top !== window.self; } catch (e) { return true; } })();
+const LIMITED = framed || !!window.claude;
+const CAN_NET = !LIMITED && /^https?:$/.test(location.protocol);
+const CAN_MIC = CAN_NET && window.isSecureContext && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && !!window.MediaRecorder;
+const MOMENTS = ['Ouverture','Montée','Pic','Rewind','Fin de soirée'];
+
+/* ---------- Démo ---------- */
+const C = {
+ rings:'repeating-radial-gradient(circle,#e63946 0 6px,#120c09 6px 14px)',
+ lagos:'repeating-linear-gradient(45deg,#06d6a0 0 18px,#073b4c 18px 36px)',
+ highlife:'repeating-linear-gradient(90deg,#fcbf49 0 24px,#d62828 24px 48px,#003049 48px 72px)',
+ fire:'radial-gradient(circle,#ffba08 0 20%,#e85d04 20% 40%,#9d0208 40% 60%,#370617 60%)',
+ mud:'radial-gradient(circle at 70% 30%,#f1faee 0 12%,transparent 12.5%),linear-gradient(#2b2118 0 70%,#6b4f3a 70%)',
+ bloom:'radial-gradient(circle at 50% 110%,#f4a261 0 45%,#e76f51 45% 60%,#fefae0 60%)',
+ orbit:'radial-gradient(circle at 66% 34%,#ffd166 0 18%,transparent 18.5%),linear-gradient(#0b132b 0 60%,#ef476f 60%)',
+ desert:'linear-gradient(#f6bd60 0 50%,#f28482 50% 56%,#84a59d 56%)',
+ nuit:'linear-gradient(90deg,#0d1b2a 0 62%,#415a77 62% 70%,#e0e1dd 70% 74%,#0d1b2a 74%)',
+ neon:'linear-gradient(180deg,#ff5fa2 0 33%,#7b2ff7 33% 66%,#00d1ff 66%)',
+ spectral:'conic-gradient(#ff006e 0 25%,#ffbe0b 0 50%,#3a86ff 0 75%,#8338ec 0)',
+ synth:'repeating-linear-gradient(0deg,#00f5d4 0 2px,#10002b 2px 12px)',
+ sun:'radial-gradient(circle at 50% 40%,#ffd166 0 22%,transparent 22.5%),repeating-linear-gradient(0deg,#e76f51 0 10px,#264653 10px 20px)',
+ moss:'linear-gradient(135deg,#2a9d8f 0 50%,#e9c46a 50% 54%,#1d3557 54%)'
+};
+const T = s => s.split(';').map(x => { const [p,n,d] = x.split('|'); return {p,n,d:d||''}; });
+const DEMO = [
+ ['d1','Kaya Dread','Rivers of Echo',1978,'Sufferah Sound · SS-0412','Dub & Roots','rings','A1|Rivers of Echo|4:12;A2|Babylon Static|3:48;A3|Version Galore|5:01;B1|Sufferah’s Reverb|4:33;B2|Melodica Sunrise|3:56;B3|Dub Plate Special|6:10'],
+ ['d2','Ital Brothers','Jah Signal',1976,'Zion Gate · ZG-118','Dub & Roots','lagos','A1|Jah Signal|4:02;A2|Zion Train Coming|3:40;B1|Jah Signal Dub|4:20;B2|Roots Man|3:55'],
+ ['d3','Nyah Fisher','Kingston Haze',1979,'Tenement · TN-07','Dub & Roots','highlife','A1|Kingston Haze|3:58;A2|Ghetto Lullaby|4:11;B1|Haze Version|4:05;B2|Tenement Yard|3:30'],
+ ['d4','Rockers Unit','Sound Clash 77',1977,'Clash Records · CR-77','Dub & Roots','fire','A1|Sound Clash|3:44;A2|Dubwise Shower|4:28;B1|Rockers Delight|3:51;B2|Clash Version|4:40'],
+ ['d5','Selassie Hi-Fi','Rebel Frequency',1981,'Hi-Fi Lion · HF-3','Dub & Roots','mud','A1|Rebel Frequency|4:15;A2|Firehouse|3:37;B1|Frequency Dub|4:50;B2|Natty Step|3:22'],
+ ['d6','Zion Rays','Steppers Delight',1983,'Rays · R-21','Dub & Roots','desert','A1|Steppers Delight|5:10;A2|Rays of Light|4:02;B1|Steppers Version|5:30'],
+ ['d7','The Dubwise Crew','Night Version',1980,'Dubwise · DW-9','Dub & Roots','orbit','A1|Midnight Rockers|4:20;A2|Echo Chamber|3:58;B1|Night Version|5:12;B2|Last Bus Dub|4:44'],
+ ['d8','Lion Dub','Echo Valley',1982,'Valley · V-002','Dub & Roots','bloom','A1|Echo Valley|4:30;A2|Lion Heart|3:50;B1|Valley Dub|5:05'],
+ ['d9','J.-B. Morel Trio','Nuit Bleue',1958,'Disques Mistral · MS 30.112','Jazz','nuit','A1|Nuit Bleue|6:42;A2|Rue des Martyrs|4:15;B1|Le Caveau, 3 h|7:20;B2|Aube sur la Seine|5:31'],
+ ['d10','Les Lunes Électriques','Orbite Basse',1974,'Disques Satellite · DS-40','Jazz','sun','A1|Orbite Basse|5:44;A2|Apesanteur|4:30;B1|Retour sur Terre|6:02'],
+ ['d11','Sister Ruby','Fire Sermon',1972,'Revival Records · RV-2201','Soul & Gospel','fire','A1|Wake the Valley|3:52;A2|Fire Sermon|4:40;A3|Hallelujah Bus|3:18;B1|Testify|4:55'],
+ ['d12','The Velvet Hours','Slow Bloom',1969,'Velvet · VH-12','Soul & Gospel','bloom','A1|Slow Bloom|3:20;A2|Honey Rain|2:58;B1|Late Again|3:41'],
+ ['d13','Kofi Mensah','Highlife Radio',1971,'Accra Sound · AS-5','Afro','highlife','A1|Highlife Radio|5:20;A2|Palm Wine|4:48;B1|Kumasi Groove|6:01'],
+ ['d14','Marla Okoye','Lagos Night Shift',1976,'Afrodisc · AD-31','Afro','lagos','A1|Lagos Night Shift|6:30;A2|Night Bus to Ikeja|5:12;B1|Overtime|7:04'],
+ ['d15','Prism Collective','Spectral',1994,'Prism · PR-001','Électronique','spectral','A1|Spectral|6:12;B1|Refraction|5:48;B2|White Light|7:30'],
+ ['d16','Ondes Mécaniques','Synthèse',1981,'Ondes · OM-81','Électronique','synth','A1|Synthèse|4:40;A2|Oscillateur|3:55;B1|Ruban|5:10']
+].map(([id,a,t,y,l,g,c,tr]) => ({id,a,t,y,l,g,css:C[c],tr:T(tr)}));
+const SEED = {
+ 'd1:0':{s:4,b:76,src:'GetSongBPM',k:'Am',m:['Ouverture'],c:'L’intro qui met tout le monde d’accord.'},
+ 'd1:1':{s:3,b:80,src:'GetSongBPM'},
+ 'd1:2':{s:4,b:74,src:'GetSongBPM',k:'Am',m:['Montée','Pic'],c:'Basse énorme, le mélodica arrive à 1:40. Parfait pour faire monter après une intro roots.',set:true},
+ 'd2:2':{s:5,b:72,src:'Micro',m:['Pic','Rewind'],c:'Le rewind obligatoire.',set:true},
+ 'd3:0':{s:4,b:84,src:'GetSongBPM',m:['Montée'],set:true},
+ 'd6:0':{s:5,b:88,src:'Tempo tapé',m:['Pic'],c:'Steppers parfait pour finir la montée.'},
+ 'd7:2':{s:5,b:78,src:'GetSongBPM',m:['Fin de soirée'],c:'À garder pour la toute fin.'},
+ 'd9:0':{s:4,b:62,src:'GetSongBPM',m:['Ouverture']},
+ 'd11:2':{s:4,b:104,src:'GetSongBPM'},
+ 'd13:0':{s:5,b:112,src:'GetSongBPM',m:['Pic']}
+};
+
+/* ---------- État ---------- */
+const ls = {
+ get(k, d){ try { const v = localStorage.getItem('dc.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+ set(k, v){ try { localStorage.setItem('dc.' + k, JSON.stringify(v)); } catch (e) {} }
+};
+const S = Object.assign({ mode:'demo', user:'', token:'', gsb:'', audd:'' }, ls.get('settings', {}));
+if (LIMITED) S.mode = 'demo';
+let NOTES = ls.get('notes', null) || JSON.parse(JSON.stringify(SEED));
+let LIB = S.mode === 'discogs' ? (ls.get('lib', []) || []) : DEMO;
+const crateIdx = {};
+const sys = { r:0, min:0, m:'' };
+
+let dbDoc = null, writing = Promise.resolve(), remoteTimer = 0;
+function saveNotes(){
+ ls.set('notes', NOTES);
+ if (!dbDoc) return;
+ clearTimeout(remoteTimer);
+ remoteTimer = setTimeout(() => { writing = writing.then(() => dbDoc.set({ notes: NOTES, t: Date.now() })).catch(() => {}); }, 900);
+}
+function saveSettings(){ ls.set('settings', S); }
+function saveLib(){ if (S.mode === 'discogs') ls.set('lib', LIB); }
+
+const key = (rid, i) => rid + ':' + i;
+const note = k => NOTES[k] || {};
+function setNote(k, patch){
+ const n = Object.assign({}, note(k), patch, { t: Date.now() });
+ NOTES[k] = n; saveNotes(); flash('Enregistré');
+}
+let toastT = 0;
+function flash(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 1400); }
+
+/* ---------- Helpers ---------- */
+const byId = id => LIB.find(r => r.id === id);
+const slug = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'divers';
+const norm = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+function hue(id){ let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
+function coverCss(r){ if (r.css) return r.css; const h = hue(r.id); return `radial-gradient(circle at 30% 35%,hsl(${h} 60% 55%) 0 24%,transparent 24.5%),linear-gradient(hsl(${(h+140)%360} 40% 22%) 0 62%,hsl(${(h+40)%360} 55% 45%) 62%)`; }
+function cover(r, px, extra){
+ const img = r.img && !LIMITED ? `<img src="${esc(r.img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
+ return `<div class="cv" style="width:${px}px;height:${px}px;background:${coverCss(r)};${extra||''}" aria-hidden="true">${img}</div>`;
+}
+const starTxt = s => s ? '★'.repeat(s) + '☆'.repeat(5 - s) : '';
+const starSvg = on => `<svg viewBox="0 0 24 24" fill="${on ? '#efe6d2' : 'none'}" aria-hidden="true"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1 6.3L12 17.5 6.5 20.4l1-6.3L3 9.7l6.2-.9z"/></svg>`;
+function bins(){
+ const m = new Map();
+ for (const r of LIB) { const g = r.g || 'Divers'; if (!m.has(g)) m.set(g, []); m.get(g).push(r); }
+ return [...m.entries()].map(([g, rs]) => ({ g, s: slug(g), rs: rs.slice().sort((a, b) => a.a.localeCompare(b.a, 'fr')) })).sort((a, b) => b.rs.length - a.rs.length);
+}
+function allTracks(){
+ const out = [];
+ for (const r of LIB) (r.tr || []).forEach((t, i) => { const k = key(r.id, i), n = NOTES[k]; if (n) out.push({ r, t, i, k, n }); });
+ return out;
+}
+
+/* ---------- Discogs & GetSongBPM (version hébergée) ---------- */
+async function dget(path){
+ const res = await fetch('https://api.discogs.com' + path, { headers: { Authorization: 'Discogs token=' + S.token } });
+ if (!res.ok) throw new Error(res.status === 401 ? 'Jeton Discogs refusé' : 'Discogs a répondu ' + res.status);
+ return res.json();
+}
+async function importDiscogs(status){
+ const out = []; let page = 1, pages = 1;
+ do {
+  const j = await dget(`/users/${encodeURIComponent(S.user)}/collection/folders/0/releases?per_page=100&page=${page}`);
+  pages = (j.pagination && j.pagination.pages) || 1;
+  for (const it of j.releases || []) {
+   const b = it.basic_information || {}, lab = (b.labels || [])[0] || {};
+   out.push({ id:'r' + b.id, did:b.id, a:(b.artists || []).map(x => String(x.name).replace(/ \(\d+\)$/, '')).join(', '), t:b.title || '', y:b.year || '', l:[lab.name, lab.catno].filter(Boolean).join(' · '), g:(b.genres || [])[0] || 'Divers', img:b.cover_image || b.thumb || '', tr:null });
+  }
+  status(`${out.length} disques importés…`); page++;
+ } while (page <= pages);
+ return out;
+}
+async function loadTracks(r){
+ if (r.tr || !r.did || !CAN_NET) return r.tr || [];
+ const j = await dget('/releases/' + r.did);
+ r.tr = (j.tracklist || []).filter(t => (t.type_ || 'track') === 'track').map(t => ({ p:t.position || '', n:t.title || '', d:t.duration || '' }));
+ saveLib(); return r.tr;
+}
+async function gsbLookup(r, t){
+ const q = `song:${t.n} artist:${r.a.split(',')[0]}`;
+ const res = await fetch(`https://api.getsong.co/search/?api_key=${encodeURIComponent(S.gsb)}&type=both&lookup=${encodeURIComponent(q)}`);
+ if (!res.ok) throw new Error('GetSongBPM a répondu ' + res.status);
+ const j = await res.json(), list = Array.isArray(j.search) ? j.search : [];
+ const hit = list.find(x => x && x.tempo);
+ if (!hit) throw new Error('Titre absent de GetSongBPM');
+ return { b: Math.round(parseFloat(hit.tempo)), k: hit.key_of || '' };
+}
+
+/* ---------- Détection du tempo ---------- */
+async function analyze(ab){
+ const AC = window.AudioContext || window.webkitAudioContext;
+ const ac = new AC(); const buf = await ac.decodeAudioData(ab); if (ac.close) ac.close();
+ const sr = buf.sampleRate, len = Math.min(buf.length, Math.round(sr * 40));
+ const off = new OfflineAudioContext(1, len, sr), src = off.createBufferSource(), lp = off.createBiquadFilter();
+ src.buffer = buf; lp.type = 'lowpass'; lp.frequency.value = 200; src.connect(lp); lp.connect(off.destination); src.start(0);
+ const d = (await off.startRendering()).getChannelData(0);
+ const rate = 200, hop = Math.round(sr / rate), n = Math.floor(d.length / hop);
+ if (n < rate * 4) throw new Error('Enregistrement trop court (4 s minimum)');
+ const e = new Float32Array(n);
+ for (let i = 0; i < n; i++) { let s = 0; for (let j = i * hop, z = j + hop; j < z; j++) s += d[j] * d[j]; e[i] = Math.log(1e-8 + s); }
+ const on = new Float32Array(n); let mean = 0;
+ for (let i = 2; i < n; i++) { on[i] = Math.max(0, e[i] - (e[i - 1] + e[i - 2]) / 2); mean += on[i]; }
+ mean /= n; for (let i = 0; i < n; i++) on[i] -= mean;
+ const lo = Math.floor(rate * 60 / 180), hi = Math.ceil(rate * 60 / 55), ac2 = [];
+ let best = lo, bv = -Infinity, sum = 0;
+ for (let L = lo; L <= hi; L++) {
+  let s = 0; for (let i = 0; i + L < n; i++) s += on[i] * on[i + L];
+  const bpm = rate * 60 / L, w = Math.exp(-0.5 * (Math.log2(bpm / 100) / 0.9) ** 2);
+  ac2[L] = s; sum += s; if (s * w > bv) { bv = s * w; best = L; }
+ }
+ const a = ac2[best - 1] ?? ac2[best], b = ac2[best], c = ac2[best + 1] ?? ac2[best];
+ const shift = (a - 2 * b + c) ? 0.5 * (a - c) / (a - 2 * b + c) : 0;
+ const bpm = rate * 60 / (best + shift), conf = b / (sum / (hi - lo + 1) || 1);
+ return { b: Math.round(bpm), alt: Math.round(bpm < 95 ? bpm * 2 : bpm / 2), conf: conf > 2.2 ? 'élevée' : conf > 1.5 ? 'moyenne' : 'faible' };
+}
+async function recordMic(sec, tick){
+ const st = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
+ const rec = new MediaRecorder(st), ch = [];
+ rec.ondataavailable = ev => ch.push(ev.data); rec.start();
+ for (let s = sec; s > 0; s--) { tick(s); await new Promise(r => setTimeout(r, 1000)); }
+ const stopped = new Promise(r => rec.onstop = r); rec.stop(); await stopped; st.getTracks().forEach(t => t.stop());
+ return new Blob(ch, { type: rec.mimeType || 'audio/webm' });
+}
+async function auddRecognize(blob){
+ const fd = new FormData(); fd.append('api_token', S.audd); fd.append('file', blob, 'ecoute.webm');
+ const res = await fetch('https://api.audd.io/', { method:'POST', body: fd }), j = await res.json();
+ if (j.status !== 'success' || !j.result) throw new Error('Titre non reconnu');
+ return j.result;
+}
+async function matchInLib(res){
+ const ar = norm(res.artist), ti = norm(res.title);
+ const cands = LIB.filter(r => { const a = norm(r.a); return a && ar && (a.includes(ar) || ar.includes(a)); });
+ for (const r of cands.slice(0, 6)) {
+  const tr = await loadTracks(r).catch(() => r.tr || []);
+  const i = tr.findIndex(t => { const n = norm(t.n); return n && (n.includes(ti) || ti.includes(n)); });
+  if (i >= 0) return { r, i };
+ }
+ return null;
+}
+
+/* ---------- Vues ---------- */
+function vBacs(){
+ const B = bins(), tracks = allTracks();
+ if (!LIB.length) { V.innerHTML = `<h1>Ta collection <i class="s">arrive.</i></h1><p class="mut">Aucun disque pour l’instant. Relie ton Discogs depuis le Profil.</p><a class="btn" href="#profil">Aller au profil</a>`; return; }
+ const day = B[new Date().getDate() % B.length];
+ const rated = tracks.filter(x => x.n.s).length, bpm = tracks.filter(x => x.n.b).length;
+ V.innerHTML = `
+ <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap">
+  <div><p class="lab">${LIB.length} disques · ${B.length} bacs${S.mode === 'demo' ? ' · collection de démonstration' : ''}</p><h1 style="margin-top:6px">Mes bacs</h1></div>
+  ${CAN_MIC && S.audd ? `<button class="btn2" id="recog"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Reconnaître ce qui tourne</button>` : ''}
+ </div>
+ <div class="grid2 sec" style="margin-top:28px;align-items:center">
+  <a href="#bac-${esc(day.s)}" style="display:block;position:relative;height:230px;text-decoration:none" aria-label="Fouiller le bac ${esc(day.g)}">
+   ${day.rs.slice(0, 3).reverse().map((r, j) => cover(r, 200 - (2 - j) * 20, `position:absolute;left:${(2 - j) * 58}px;top:${(2 - j) * 10}px;filter:brightness(${j === 2 ? 1 : .55 + j * .15});box-shadow:0 24px 50px rgba(0,0,0,.8)`)).join('')}
+  </a>
+  <div>
+   <p class="lab">Bac du jour</p><h2 style="font-size:clamp(34px,5vw,48px);margin-top:4px">${esc(day.g)}</h2>
+   <p class="mut small" style="margin:8px 0 18px">${day.rs.length} disques · ${rated} titres notés et ${bpm} BPM connus dans ta collection</p>
+   <a class="btn" href="#bac-${esc(day.s)}">Fouiller ce bac</a>
+  </div>
+ </div>
+ <label class="field sec"><span>Chercher un disque ou un artiste</span><input class="in" id="q" type="search" autocomplete="off" placeholder="Kaya Dread, Nuit Bleue…"></label>
+ <ul class="list" id="res" style="margin-top:12px"></ul>
+ <h2 class="sec" style="margin-bottom:12px">Tous les bacs</h2>
+ <ul class="list">${B.map(b => `<li><a class="rowl" href="#bac-${esc(b.s)}"><span style="flex:1;font:400 26px var(--serif)">${esc(b.g)}</span><span class="small mut">${b.rs.length}</span><span style="display:flex">${b.rs.slice(0, 3).map((r, j) => cover(r, 34, `margin-left:${j ? -12 : 0}px;box-shadow:0 0 0 2px #0a0a0a`)).join('')}</span></a></li>`).join('')}</ul>`;
+ const q = $('#q'), res = $('#res');
+ q.addEventListener('input', () => {
+  const v = norm(q.value);
+  const hits = v ? LIB.filter(r => norm(r.a + ' ' + r.t).includes(v)).slice(0, 12) : [];
+  res.innerHTML = hits.map(r => `<li><a class="rowl" href="#disque-${esc(r.id)}">${cover(r, 48)}<span style="flex:1"><span style="display:block;font:400 22px/1.1 var(--serif)">${esc(r.t)}</span><span class="small mut">${esc(r.a)} · ${esc(r.y)}</span></span></a></li>`).join('') || (v ? '<li class="note" style="padding:14px 0">Aucun disque ne correspond.</li>' : '');
+ });
+ const rb = $('#recog'); if (rb) rb.addEventListener('click', recognizeFlow);
+}
+
+function vBac(s){
+ const b = bins().find(x => x.s === s);
+ if (!b) { location.hash = 'bacs'; return; }
+ if (crateIdx[s] == null) crateIdx[s] = Math.min(2, b.rs.length - 1);
+ V.innerHTML = `
+ <div style="display:flex;align-items:center;gap:10px"><a class="ico" href="#bacs" aria-label="Retour aux bacs"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
+ <div><h1 style="font-size:clamp(32px,5vw,44px)">${esc(b.g)}</h1><p class="lab">${b.rs.length} disques · rangés par artiste</p></div></div>
+ <div class="grid2" style="margin-top:10px;align-items:center">
+  <div class="crate" id="crate" tabindex="0" aria-label="Bac : flèches haut et bas pour feuilleter, Entrée pour sortir le disque"></div>
+  <div>
+   <div id="info"></div>
+   <div style="display:flex;gap:10px;margin-top:18px"><button class="ico" id="prev" aria-label="Pochette précédente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button><button class="ico on" id="next" aria-label="Pochette suivante"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><a class="btn" id="open" style="flex:1">Sortir du bac</a></div>
+   <p class="note" style="margin-top:12px">Glisse sur le bac ou utilise les flèches pour feuilleter.</p>
+  </div>
+ </div>
+ <h2 class="sec" style="margin-bottom:12px">Tout le bac</h2>
+ <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:22px 16px">${b.rs.map(r => `<a href="#disque-${esc(r.id)}" style="text-decoration:none">${cover(r, 130, 'width:100%;height:auto;aspect-ratio:1')}<span class="ell" style="display:block;margin-top:8px;font:400 19px/1.1 var(--serif)">${esc(r.t)}</span><span class="ell small mut" style="display:block">${esc(r.a)}</span></a>`).join('')}</div>`;
+ const draw = () => {
+  const i = crateIdx[s], from = Math.max(0, Math.min(i - 3, b.rs.length - 8)), win = b.rs.slice(Math.max(0, from), Math.max(0, from) + 8);
+  $('#crate').innerHTML = `<div class="crate-in">${win.map((r, j) => {
+   const idx = from + j, sel = idx === i;
+   const st = `top:${40 + j * 20 - (sel ? 100 : 0)}px;z-index:${j + 1};background:${coverCss(r)};box-shadow:${sel ? '0 30px 60px rgba(0,0,0,.85)' : '0 -6px 16px rgba(0,0,0,.7)'};${sel ? 'outline:1px solid #efe6d2;outline-offset:5px' : 'filter:brightness(.7)'}`;
+   const img = r.img && !LIMITED ? `<img src="${esc(r.img)}" alt="">` : '';
+   return sel ? `<a class="sleeve" href="#disque-${esc(r.id)}" style="${st}" aria-label="Sortir ${esc(r.t)}">${img}</a>` : `<span class="sleeve" style="${st}" aria-hidden="true">${img}</span>`;
+  }).join('')}<div class="front"><i class="s" style="font:italic 400 22px var(--serif);color:var(--mut)">${esc((b.rs[0].a || '?')[0])} — ${esc((b.rs[b.rs.length - 1].a || '?')[0])}</i><span class="note">${i + 1} / ${b.rs.length}</span></div></div>`;
+  const r = b.rs[i], tr = r.tr || [], rated = tr.filter((t, k) => note(key(r.id, k)).s).length;
+  $('#info').innerHTML = `<p class="lab">${esc(r.a)} · ${esc(r.y)}</p><h2 style="font-size:clamp(32px,4vw,42px);margin-top:4px">${esc(r.t)}</h2><p class="small mut" style="margin:8px 0 0">${tr.length ? `${rated} titre${rated > 1 ? 's' : ''} noté${rated > 1 ? 's' : ''} sur ${tr.length}` : 'Tracklist chargée à l’ouverture'}</p>`;
+  $('#open').href = '#disque-' + r.id;
+ };
+ const go = d => { crateIdx[s] = Math.max(0, Math.min(b.rs.length - 1, crateIdx[s] + d)); draw(); };
+ $('#prev').onclick = () => go(-1); $('#next').onclick = () => go(1);
+ const cr = $('#crate'); let y0 = null;
+ cr.addEventListener('keydown', e => { if (e.key === 'ArrowDown') { e.preventDefault(); go(1); } if (e.key === 'ArrowUp') { e.preventDefault(); go(-1); } if (e.key === 'Enter') location.hash = 'disque-' + b.rs[crateIdx[s]].id; });
+ cr.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; }, { passive: true });
+ cr.addEventListener('touchmove', e => { if (y0 !== null) e.preventDefault(); }, { passive: false });
+ cr.addEventListener('touchend', e => { if (y0 === null) return; const dy = e.changedTouches[0].clientY - y0; y0 = null; if (Math.abs(dy) > 28) go(dy < 0 ? 1 : -1); });
+ draw();
+}
+
+async function vDisque(id){
+ const r = byId(id); if (!r) { location.hash = 'bacs'; return; }
+ const b = slug(r.g || 'Divers');
+ V.innerHTML = `
+ <a class="btn2" href="#bac-${esc(b)}" style="margin-bottom:18px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 19V5M5 12l7 7 7-7"/></svg>Remettre dans le bac</a>
+ <div class="grid2">
+  <div>${cover(r, 320, 'width:min(100%,360px);height:auto;aspect-ratio:1;box-shadow:0 30px 60px rgba(0,0,0,.85)')}
+   <p class="lab" style="margin-top:22px">${esc(r.a)} · ${esc(r.y)}</p><h1 style="margin-top:6px">${esc(r.t)}</h1><p class="small mut" style="margin:10px 0 0">${esc(r.l)}</p></div>
+  <div><h2 style="margin-bottom:12px">Tracklist</h2><ol class="list" id="tl"><li class="note" style="padding:16px 0">Chargement de la tracklist…</li></ol>
+  <p class="note" style="margin-top:12px">Touche un titre pour le noter, le commenter et retrouver son BPM.</p></div>
+ </div>`;
+ let tr = r.tr;
+ if (!tr) { try { tr = await loadTracks(r); } catch (e) { $('#tl').innerHTML = `<li class="note" style="padding:16px 0">${esc(e.message)}</li>`; return; } }
+ if (location.hash.slice(1) !== 'disque-' + id) return;
+ $('#tl').innerHTML = tr.map((t, i) => { const n = note(key(r.id, i)); return `<li><a class="rowl" href="#titre-${esc(r.id)}-${i}" style="display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:12px">
+  <span class="small dim">${esc(t.p)}</span>
+  <span><span class="ell" style="display:block;font-size:16px;font-weight:400">${esc(t.n)}</span><span class="ell small mut" style="display:block">${n.s ? `<span style="letter-spacing:.1em">${starTxt(n.s)}</span>` : 'Pas encore noté'}${n.c ? ' · « ' + esc(n.c) + ' »' : ''}</span></span>
+  <span style="text-align:right"><span style="display:block;font:400 24px/1 var(--serif)">${n.b ? esc(n.b) : '—'}</span><span style="font-size:11px" class="dim">BPM</span></span></a></li>`; }).join('') || '<li class="note" style="padding:16px 0">Pas de tracklist sur Discogs pour ce disque.</li>';
+}
+
+function vTitre(id, i){
+ const r = byId(id), t = r && r.tr && r.tr[i];
+ if (!t) { location.hash = r ? 'disque-' + id : 'bacs'; return; }
+ const k = key(id, i), n = note(k);
+ const gsbOk = CAN_NET && S.gsb;
+ V.innerHTML = `
+ <div style="max-width:680px">
+ <div style="display:flex;align-items:center;gap:12px"><a class="ico" href="#disque-${esc(id)}" aria-label="Retour au disque"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>${cover(r, 34)}<span class="small mut ell">${esc(r.a)} — ${esc(r.t)}</span></div>
+ <p class="lab" style="margin-top:20px">Face ${esc(t.p)}${t.d ? ' · ' + esc(t.d) : ''}</p>
+ <h1 style="margin-top:6px">${esc(t.n)}</h1>
+ <section class="panel" aria-label="Tempo">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap">
+   <div style="display:flex;align-items:baseline;gap:10px"><span class="bpm" id="bpmv">${n.b ? esc(n.b) : '—'}</span><span class="small mut">BPM${n.k ? ' · ' + esc(n.k) : ''}</span></div>
+   <div style="display:flex;gap:8px;align-items:center"><button class="pill" id="half" ${n.b ? '' : 'disabled'}>÷ 2</button><button class="pill" id="dbl" ${n.b ? '' : 'disabled'}>× 2</button>
+   <label><span class="sr">Saisir le BPM</span><input class="in" id="bpmIn" type="number" inputmode="numeric" min="30" max="250" placeholder="BPM" value="${n.b || ''}" style="width:92px;min-height:42px"></label></div>
+  </div>
+  <p class="small dim" id="src" style="margin:10px 0 0">${n.src ? 'Source : ' + esc(n.src) : 'Pas encore de tempo pour ce titre.'}</p>
+  <div class="pills" style="margin-top:14px">
+   <button class="btn2" id="gsb" ${gsbOk ? '' : 'disabled'}>Chercher sur GetSongBPM</button>
+   ${CAN_MIC ? '<button class="btn2" id="mic">Mesurer au micro</button>' : ''}
+   <label class="btn2" style="cursor:pointer">Analyser un enregistrement<input id="file" type="file" accept="audio/*" class="sr"></label>
+   <button class="btn2" id="tapo">Taper le tempo</button>
+  </div>
+  ${gsbOk ? '' : `<p class="note" style="margin:10px 0 0">${CAN_NET ? 'Ajoute ta clé GetSongBPM dans le Profil pour la recherche automatique.' : 'Sur claude.ai, l’appli ne peut pas appeler GetSongBPM ni ouvrir le micro : héberge-la pour les activer. L’analyse d’un enregistrement et le tempo tapé marchent ici.'}</p>`}
+  <div id="tool"></div>
+ </section>
+ <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;flex-wrap:wrap"><span class="lab">Ta note</span><div class="stars" role="radiogroup" aria-label="Note sur 5" id="stars"></div></div>
+ <p class="lab" style="margin:16px 0 10px">Dans un système, pour…</p>
+ <div class="pills" id="moms">${MOMENTS.map(m => `<button class="pill" aria-pressed="${(n.m || []).includes(m)}" data-m="${esc(m)}">${esc(m)}</button>`).join('')}</div>
+ <label class="field" style="margin-top:20px"><span>Ton ressenti</span><textarea class="in" id="com" placeholder="Ce que ce morceau te fait, quand le passer…">${esc(n.c || '')}</textarea></label>
+ <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+  <button class="btn" id="set" style="flex:1">${n.set ? '✓ Dans mon système' : 'Ajouter à mon système'}</button>
+  ${i > 0 ? `<a class="ico" href="#titre-${esc(id)}-${i - 1}" aria-label="Titre précédent"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>` : ''}
+  ${i < r.tr.length - 1 ? `<a class="ico" href="#titre-${esc(id)}-${i + 1}" aria-label="Titre suivant"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></a>` : ''}
+ </div>
+ </div>`;
+ const drawStars = () => { const s = note(k).s || 0; $('#stars').innerHTML = [1,2,3,4,5].map(v => `<button role="radio" aria-checked="${v === s}" aria-label="${v} sur 5" data-v="${v}">${starSvg(v <= s)}</button>`).join(''); };
+ drawStars();
+ $('#stars').onclick = e => { const b = e.target.closest('button'); if (!b) return; const v = +b.dataset.v; setNote(k, { s: note(k).s === v ? 0 : v }); drawStars(); };
+ $('#moms').onclick = e => { const b = e.target.closest('button'); if (!b) return; const m = b.dataset.m, cur = new Set(note(k).m || []); cur.has(m) ? cur.delete(m) : cur.add(m); setNote(k, { m: [...cur] }); b.setAttribute('aria-pressed', cur.has(m)); };
+ let ct = 0; $('#com').oninput = e => { clearTimeout(ct); ct = setTimeout(() => setNote(k, { c: e.target.value.trim() }), 600); };
+ $('#set').onclick = () => { const v = !note(k).set; setNote(k, { set: v }); $('#set').textContent = v ? '✓ Dans mon système' : 'Ajouter à mon système'; };
+ const putBpm = (b, src, extra) => {
+  if (!b || b < 30 || b > 250) return;
+  setNote(k, Object.assign({ b: Math.round(b), src }, extra || {}));
+  $('#bpmv').textContent = Math.round(b); $('#bpmIn').value = Math.round(b); $('#src').textContent = 'Source : ' + src;
+  $('#half').disabled = $('#dbl').disabled = false;
+ };
+ $('#half').onclick = () => putBpm(note(k).b / 2, 'Tempo divisé par 2');
+ $('#dbl').onclick = () => putBpm(note(k).b * 2, 'Tempo doublé');
+ $('#bpmIn').onchange = e => putBpm(+e.target.value, 'Saisi à la main');
+ const tool = $('#tool');
+ const result = (res, src) => {
+  tool.innerHTML = `<div style="margin-top:16px;padding:16px;border-radius:14px;background:var(--card)"><p class="small mut" style="margin:0 0 10px">${esc(src)} · fiabilité ${esc(res.conf)}. En dub, le détecteur hésite souvent entre deux lectures.</p><div class="pills"><button class="btn" data-b="${res.b}">Garder ${res.b} BPM</button><button class="btn2" data-b="${res.alt}">Garder ${res.alt} BPM</button></div></div>`;
+  tool.onclick = e => { const b = e.target.closest('[data-b]'); if (!b) return; putBpm(+b.dataset.b, src); tool.innerHTML = ''; };
+ };
+ const gsb = $('#gsb');
+ if (gsb) gsb.onclick = async () => { gsb.disabled = true; gsb.textContent = 'Recherche…'; try { const x = await gsbLookup(r, t); putBpm(x.b, 'GetSongBPM', { k: x.k }); } catch (e) { flash(e.message); } gsb.disabled = false; gsb.textContent = 'Chercher sur GetSongBPM'; };
+ const mic = $('#mic');
+ if (mic) mic.onclick = async () => {
+  tool.innerHTML = `<div class="listen" aria-hidden="true"><i></i><i></i><i></i><b id="cd">12</b></div><p class="small mut" style="text-align:center;margin:0">J’écoute la platine… approche le téléphone de l’enceinte. Le son reste sur ton appareil.</p>`;
+  try { const blob = await recordMic(12, s => { const c = $('#cd'); if (c) c.textContent = s; }); tool.innerHTML = '<p class="small mut">Calcul du tempo…</p>'; result(await analyze(await blob.arrayBuffer()), 'Mesuré au micro'); }
+  catch (e) { tool.innerHTML = `<p class="small mut">${esc(e.name === 'NotAllowedError' ? 'Accès au micro refusé.' : e.message)}</p>`; }
+ };
+ $('#file').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  tool.innerHTML = '<p class="small mut" style="margin-top:14px">Analyse de l’enregistrement…</p>';
+  try { result(await analyze(await f.arrayBuffer()), 'Analysé sur un enregistrement'); } catch (err) { tool.innerHTML = `<p class="small mut" style="margin-top:14px">${esc(err.message || 'Fichier illisible')}</p>`; }
+  e.target.value = '';
+ };
+ $('#tapo').onclick = () => {
+  let taps = [];
+  tool.innerHTML = `<button class="tapbox" id="tap" style="margin-top:16px">Tape ici au rythme du morceau<br><span id="tapv" style="font:400 40px var(--serif)">—</span></button><div class="pills" style="margin-top:10px"><button class="btn" id="tapk" disabled>Garder ce tempo</button><button class="btn2" id="tapr">Recommencer</button></div>`;
+  const live = () => { if (taps.length < 3) return 0; const iv = []; for (let j = 1; j < taps.length; j++) iv.push(taps[j] - taps[j - 1]); iv.sort((a, b) => a - b); return 60000 / iv[Math.floor(iv.length / 2)]; };
+  $('#tap').onpointerdown = () => { const now = performance.now(); if (taps.length && now - taps[taps.length - 1] > 2000) taps = []; taps.push(now); taps = taps.slice(-12); const v = live(); $('#tapv').textContent = v ? Math.round(v) : '…'; $('#tapk').disabled = !v; };
+  $('#tapr').onclick = () => { taps = []; $('#tapv').textContent = '—'; $('#tapk').disabled = true; };
+  $('#tapk').onclick = () => { putBpm(live(), 'Tempo tapé'); tool.innerHTML = ''; };
+ };
+}
+
+function vSysteme(){
+ const R = [['Tous',0,999],['60–80',60,80],['80–100',80,100],['100–120',100,120],['120 +',120,999]];
+ const [, lo, hi] = R[sys.r];
+ const rows = allTracks().filter(x => (x.n.s || x.n.b)).filter(x => (!x.n.b ? sys.r === 0 : x.n.b >= lo && x.n.b < hi) && (x.n.s || 0) >= sys.min && (!sys.m || (x.n.m || []).includes(sys.m))).sort((a, b) => (a.n.b || 999) - (b.n.b || 999));
+ const chosen = allTracks().filter(x => x.n.set).sort((a, b) => (a.n.b || 999) - (b.n.b || 999));
+ const bp = chosen.map(x => x.n.b).filter(Boolean), discs = new Map();
+ chosen.forEach(x => { if (!discs.has(x.r.id)) discs.set(x.r.id, { r: x.r, p: [] }); discs.get(x.r.id).p.push(x.t.p); });
+ V.innerHTML = `
+ <p class="lab">Dans tes titres notés</p><h1 style="margin-top:6px">Préparer un <i class="s">système</i></h1>
+ <div class="grid2" style="margin-top:26px">
+ <div>
+  <p class="lab" style="margin-bottom:8px">Tempo</p><div class="pills" role="radiogroup" aria-label="Tempo" id="fr">${R.map(([l], j) => `<button class="pill" role="radio" aria-checked="${j === sys.r}" data-j="${j}">${l}</button>`).join('')}</div>
+  <p class="lab" style="margin:14px 0 8px">Note minimale</p><div class="pills" role="radiogroup" aria-label="Note minimale" id="fs">${[[0,'Toutes'],[3,'★ 3 et +'],[4,'★ 4 et +'],[5,'★ 5']].map(([v, l]) => `<button class="pill" role="radio" aria-checked="${v === sys.min}" data-v="${v}">${l}</button>`).join('')}</div>
+  <p class="lab" style="margin:14px 0 8px">Moment</p><div class="pills" id="fm">${['', ...MOMENTS].map(m => `<button class="pill" aria-pressed="${m === sys.m}" data-m="${esc(m)}">${m ? esc(m) : 'Tous'}</button>`).join('')}</div>
+  <p class="small dim" style="margin:20px 0 8px">${rows.length} titre${rows.length > 1 ? 's' : ''} correspondent</p>
+  <ul class="list" id="rows">${rows.map(x => `<li style="display:grid;grid-template-columns:52px minmax(0,1fr) 46px;gap:12px;align-items:center;min-height:68px">
+   <span style="font:400 28px/1 var(--serif)">${x.n.b ? esc(x.n.b) : '—'}</span>
+   <a href="#titre-${esc(x.r.id)}-${x.i}" style="text-decoration:none"><span class="ell" style="display:block;font-size:16px;font-weight:400">${esc(x.t.n)}</span><span class="ell small mut" style="display:block"><span style="letter-spacing:.1em">${starTxt(x.n.s)}</span> ${esc(x.r.t)} · ${esc(x.t.p)}${x.n.c ? ' · « ' + esc(x.n.c) + ' »' : ''}</span></a>
+   <button class="ico ${x.n.set ? 'on' : ''}" data-k="${esc(x.k)}" aria-label="${x.n.set ? 'Retirer' : 'Ajouter'} ${esc(x.t.n)}">${x.n.set ? '✓' : '+'}</button></li>`).join('') || '<li class="note" style="padding:16px 0">Aucun titre noté ne correspond. Note des titres depuis tes bacs.</li>'}</ul>
+ </div>
+ <aside style="align-self:start;padding:22px;border-radius:16px;background:var(--card);border:1px solid #232120">
+  <h2>Mon système</h2>
+  <p class="small mut" style="margin:6px 0 16px">${chosen.length ? `${chosen.length} titre${chosen.length > 1 ? 's' : ''}${bp.length ? ' · ' + Math.min(...bp) + '–' + Math.max(...bp) + ' BPM' : ''} · ${discs.size} disque${discs.size > 1 ? 's' : ''} à sortir` : 'Ajoute des titres avec le bouton +.'}</p>
+  <ol class="list">${chosen.map(x => `<li style="display:flex;gap:12px;align-items:baseline;padding:10px 0"><span style="font:400 22px var(--serif);width:40px">${x.n.b || '—'}</span><span class="ell" style="flex:1">${esc(x.t.n)} <span class="small dim">${esc(x.r.t)} · ${esc(x.t.p)}</span></span></li>`).join('')}</ol>
+  ${discs.size ? `<p class="lab" style="margin:18px 0 8px">Disques à sortir</p><ul style="list-style:none;margin:0;padding:0">${[...discs.values()].map(d => `<li style="display:flex;gap:10px;align-items:center;padding:6px 0">${cover(d.r, 36)}<span class="ell small">${esc(d.r.t)} <span class="dim">· ${esc(d.p.join(', '))}</span></span></li>`).join('')}</ul>
+  <div class="pills" style="margin-top:18px"><button class="btn" id="copy">Copier la liste</button><button class="btn2" id="clear">Vider</button></div>` : ''}
+ </aside>
+ </div>`;
+ $('#fr').onclick = e => { const b = e.target.closest('button'); if (b) { sys.r = +b.dataset.j; vSysteme(); } };
+ $('#fs').onclick = e => { const b = e.target.closest('button'); if (b) { sys.min = +b.dataset.v; vSysteme(); } };
+ $('#fm').onclick = e => { const b = e.target.closest('button'); if (b) { sys.m = b.dataset.m; vSysteme(); } };
+ $('#rows').onclick = e => { const b = e.target.closest('button[data-k]'); if (!b) return; setNote(b.dataset.k, { set: !note(b.dataset.k).set }); vSysteme(); };
+ const cp = $('#copy');
+ if (cp) cp.onclick = async () => { const txt = 'Système — ' + chosen.length + ' titres\n' + chosen.map(x => `${x.n.b || '—'} BPM · ${x.t.n} — ${x.r.a} (${x.r.t}, ${x.t.p})${x.n.c ? ' · ' + x.n.c : ''}`).join('\n'); try { await navigator.clipboard.writeText(txt); flash('Liste copiée'); } catch (e) { flash('Copie refusée par le navigateur'); } };
+ const cl = $('#clear');
+ if (cl) cl.onclick = () => { if (cl.dataset.ok) { chosen.forEach(x => { NOTES[x.k] = Object.assign({}, x.n, { set: false, t: Date.now() }); }); saveNotes(); vSysteme(); } else { cl.dataset.ok = 1; cl.textContent = 'Confirmer'; } };
+}
+
+function vProfil(){
+ const tr = allTracks();
+ V.innerHTML = `
+ <div style="max-width:720px">
+ <h1>Profil</h1>
+ <dl style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:24px 0 0;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+  ${[[LIB.length,'disques'],[tr.filter(x => x.n.s).length,'titres notés'],[tr.filter(x => x.n.b).length,'BPM connus'],[tr.filter(x => x.n.c).length,'commentaires']].map(([v, l]) => `<div style="display:flex;flex-direction:column-reverse;justify-content:flex-end"><dt class="small mut">${l}</dt><dd style="margin:0;font:400 clamp(28px,5vw,36px)/1 var(--serif)">${v}</dd></div>`).join('')}
+ </dl>
+ <h2 class="sec">Discogs</h2>
+ ${CAN_NET ? `
+  <p class="small mut" style="margin:8px 0 0">${S.mode === 'discogs' ? `Relié à <b style="color:var(--ink);font-weight:500">${esc(S.user)}</b> · ${LIB.length} disques.` : 'Tu es sur la collection de démonstration.'} Crée un jeton personnel dans Discogs, Paramètres › Développeurs. Il reste dans ce navigateur.</p>
+  <form id="dform"><label class="field"><span>Nom d’utilisateur Discogs</span><input class="in" id="du" autocomplete="username" value="${esc(S.user)}" required></label>
+  <label class="field"><span>Jeton personnel</span><input class="in" id="dt" type="password" autocomplete="off" value="${esc(S.token)}" required></label>
+  <div class="pills" style="margin-top:16px"><button class="btn" type="submit">${S.mode === 'discogs' ? 'Resynchroniser' : 'Relier ma collection'}</button>${S.mode === 'discogs' ? '<button class="btn2" type="button" id="demo">Revenir à la démo</button>' : ''}</div>
+  <p class="small mut" id="dst" style="margin:12px 0 0"></p></form>`
+ : `<p class="small mut" style="margin:8px 0 0;max-width:60ch">Ici, sur claude.ai, la page ne peut joindre aucun service extérieur : tu testes l’appli sur la collection de démonstration, et tes notes sont bien enregistrées. Pour brancher ta vraie collection Discogs, GetSongBPM et le micro, ouvre la même appli hébergée sur ton propre site.</p>`}
+ <h2 class="sec">Tempo et reconnaissance</h2>
+ ${CAN_NET ? `<label class="field"><span>Clé API GetSongBPM</span><input class="in" id="gk" type="password" autocomplete="off" value="${esc(S.gsb)}" placeholder="Obtenue sur getsongbpm.com/api"></label>
+ <label class="field"><span>Jeton AudD, pour reconnaître le titre qui tourne (facultatif)</span><input class="in" id="ak" type="password" autocomplete="off" value="${esc(S.audd)}" placeholder="Obtenu sur audd.io"></label>
+ <p class="small mut" style="margin:10px 0 0">Micro : ${CAN_MIC ? 'disponible. Il ne s’active que quand tu touches « Mesurer au micro » ou « Reconnaître ».' : 'indisponible dans ce navigateur (il faut une adresse en https).'}</p>` : `<p class="small mut" style="margin:8px 0 0">Ici : analyse d’un enregistrement et tempo tapé. Version hébergée : recherche GetSongBPM, mesure au micro et reconnaissance du titre.</p>`}
+ <div style="margin-top:22px;padding:16px;border-radius:14px;border:1px solid var(--line)"><p class="lab">Sources</p><p style="margin:6px 0 0">Tempo et tonalité fournis par <a href="https://getsongbpm.com" style="font-weight:500;text-underline-offset:3px">GetSongBPM.com</a></p><p class="small dim" style="margin:4px 0 0">Collection et pochettes via Discogs. Reconnaissance des titres via AudD.</p></div>
+ <h2 class="sec">Sauvegarde</h2>
+ <p class="small mut" style="margin:8px 0 0">${dbDoc ? 'Tes notes sont enregistrées dans ton espace privé de cette page, et dans ce navigateur.' : 'Tes notes sont enregistrées dans ce navigateur.'} Copie-les pour les passer d’une version à l’autre.</p>
+ <div class="pills" style="margin-top:14px"><button class="btn2" id="exp">Copier mes notes</button><button class="btn2" id="impB">Coller des notes</button><button class="btn2" id="wipe">Effacer mes notes</button></div>
+ <div id="impZ"></div>
+ </div>`;
+ const f = $('#dform');
+ if (f) f.onsubmit = async e => {
+  e.preventDefault(); S.user = $('#du').value.trim(); S.token = $('#dt').value.trim(); saveSettings();
+  const st = $('#dst'); st.textContent = 'Connexion à Discogs…';
+  try { const lib = await importDiscogs(m => st.textContent = m); const old = new Map(LIB.map(r => [r.id, r])); LIB = lib.map(r => old.get(r.id)?.tr ? Object.assign(r, { tr: old.get(r.id).tr }) : r); S.mode = 'discogs'; saveSettings(); saveLib(); st.textContent = `${LIB.length} disques rangés dans tes bacs.`; setMode(); }
+  catch (err) { st.textContent = err.message === 'Failed to fetch' ? 'Discogs injoignable depuis cette adresse.' : err.message; }
+ };
+ const dm = $('#demo'); if (dm) dm.onclick = () => { S.mode = 'demo'; LIB = DEMO; saveSettings(); setMode(); vProfil(); };
+ const gk = $('#gk'); if (gk) gk.onchange = () => { S.gsb = gk.value.trim(); saveSettings(); flash('Clé enregistrée'); };
+ const ak = $('#ak'); if (ak) ak.onchange = () => { S.audd = ak.value.trim(); saveSettings(); flash('Jeton enregistré'); };
+ $('#exp').onclick = async () => { try { await navigator.clipboard.writeText(JSON.stringify({ discollection: 1, notes: NOTES })); flash('Notes copiées'); } catch (e) { flash('Copie refusée par le navigateur'); } };
+ $('#impB').onclick = () => {
+  $('#impZ').innerHTML = `<label class="field"><span>Colle ici des notes copiées depuis Discollection</span><textarea class="in" id="impT"></textarea></label><button class="btn" id="impG" style="margin-top:10px">Importer</button>`;
+  $('#impG').onclick = () => { try { const j = JSON.parse($('#impT').value); if (!j || typeof j.notes !== 'object') throw 0; for (const [k, v] of Object.entries(j.notes)) if (v && typeof v === 'object' && (!NOTES[k] || (v.t || 0) >= (NOTES[k].t || 0))) NOTES[k] = v; saveNotes(); flash('Notes importées'); vProfil(); } catch (e) { flash('Texte non reconnu'); } };
+ };
+ const w = $('#wipe'); w.onclick = () => { if (w.dataset.ok) { NOTES = {}; saveNotes(); flash('Notes effacées'); vProfil(); } else { w.dataset.ok = 1; w.textContent = 'Confirmer l’effacement'; } };
+}
+
+async function recognizeFlow(){
+ V.innerHTML = `<div style="max-width:560px;margin:0 auto;text-align:center"><a class="btn2" href="#bacs">Annuler</a><div class="listen" aria-hidden="true"><i></i><i></i><i></i><b id="cd">12</b></div><h1>J’écoute <i class="s">la platine…</i></h1><p class="mut" id="rst">Approche ton téléphone de l’enceinte. Environ 12 s de son sont envoyées à AudD pour reconnaître le titre.</p></div>`;
+ try {
+  const blob = await recordMic(12, s => { const c = $('#cd'); if (c) c.textContent = s; });
+  $('#rst').textContent = 'Reconnaissance et calcul du tempo…';
+  const [rec, tempo] = await Promise.all([auddRecognize(blob), analyze(await blob.arrayBuffer()).catch(() => null)]);
+  const hit = await matchInLib(rec);
+  if (!hit) { $('#rst').textContent = `C’est « ${rec.title} » de ${rec.artist}, mais ce titre n’est pas dans ta collection.`; return; }
+  const k = key(hit.r.id, hit.i);
+  if (tempo && !note(k).b) setNote(k, { b: tempo.b, src: 'Mesuré au micro' });
+  location.hash = `titre-${hit.r.id}-${hit.i}`;
+ } catch (e) { const r = $('#rst'); if (r) r.textContent = e.name === 'NotAllowedError' ? 'Accès au micro refusé.' : (e.message === 'Failed to fetch' ? 'AudD injoignable depuis cette adresse.' : e.message); }
+}
+
+/* ---------- Routeur ---------- */
+function setMode(){ $('#modeTag').textContent = S.mode === 'demo' ? 'Démo' : ''; }
+function route(){
+ const h = location.hash.slice(1) || 'bacs'; let m;
+ const tab = h.startsWith('systeme') ? 'systeme' : h.startsWith('profil') ? 'profil' : 'bacs';
+ document.querySelectorAll('[data-tab]').forEach(a => { if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+ window.scrollTo(0, 0);
+ if (h === 'systeme') vSysteme();
+ else if (h === 'profil') vProfil();
+ else if (m = h.match(/^bac-([a-z0-9-]+)$/)) vBac(m[1]);
+ else if (m = h.match(/^disque-([a-z0-9]+)$/i)) vDisque(m[1]);
+ else if (m = h.match(/^titre-([a-z0-9]+)-(\d+)$/i)) { const r = byId(m[1]); if (r && !r.tr) loadTracks(r).then(() => vTitre(m[1], +m[2])).catch(() => vDisque(m[1])); else vTitre(m[1], +m[2]); }
+ else vBacs();
+}
+addEventListener('hashchange', route);
+setMode(); route();
+
+/* ---------- Espace privé claude.ai ---------- */
+(async () => {
+ if (!window.claude || typeof window.claude.use !== 'function') return;
+ try {
+  const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+  if (!db || !user) return;
+  const uid = await user.id(); if (!uid) return;
+  const ref = db.collection('data/users/' + uid).doc('discollection');
+  const snap = await ref.get();
+  if (snap.exists) {
+   const remote = (snap.data() || {}).notes || {};
+   for (const [k, v] of Object.entries(remote)) if (v && (!NOTES[k] || (v.t || 0) > (NOTES[k].t || 0))) NOTES[k] = v;
+   ls.set('notes', NOTES);
+  }
+  dbDoc = ref;
+  if (!snap.exists) saveNotes();
+  const h = location.hash.slice(1);
+  if (!/^titre-/.test(h)) route();
+ } catch (e) {}
+})();
+}
+</script>
+</body>
+</html>
