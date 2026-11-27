@@ -80,6 +80,26 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     const body = await req.json().catch(() => ({}));
+    // Mode lot : dit d'un coup quels titres ont un extrait (fiche disque, Sound system).
+    if (Array.isArray(body.batch)) {
+      const items = body.batch.slice(0, 25);
+      const results: Record<string, string>[] = new Array(items.length).fill({});
+      let next = 0;
+      const worker = async () => {
+        while (next < items.length) {
+          const n = next++, b = items[n] ?? {};
+          const title = clean(String(b.title ?? "").slice(0, 120));
+          const raw = clean(String(b.artist ?? "").slice(0, 120));
+          const artist = /^(various|divers)\b/i.test(raw) ? "" : raw;
+          if (!title) continue;
+          const dz = await deezerSearch(title, artist).catch(() => []);
+          const pv = dz.find((x) => x.preview);
+          results[n] = pv ? { preview: pv.preview ?? "", previewOf: `${pv.artist?.name ?? ""} – ${pv.title}` } : {};
+        }
+      };
+      await Promise.all([worker(), worker(), worker(), worker()]);
+      return json({ results });
+    }
     const title = clean(String(body.title ?? "").slice(0, 120));
     const rawArtist = clean(String(body.artist ?? "").slice(0, 120));
     const artist = /^(various|divers)\b/i.test(rawArtist) ? "" : rawArtist;

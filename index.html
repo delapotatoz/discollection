@@ -143,6 +143,9 @@ body.ob main{max-width:540px;padding:max(4vh,22px) 22px 64px}
 .pvc{background:none;display:block;line-height:0}.pvc .pvi{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);opacity:0;transition:opacity .15s}
 .pvc:hover .pvi,.pvc:focus-visible .pvi,.pvc.on .pvi,.pvc.busy .pvi{opacity:1}.pvc::after{content:'';position:absolute;left:0;bottom:0;height:3px;width:calc(var(--p,0)*100%);background:var(--ink)}
 @media(hover:none){.pvc .pvi{opacity:1;background:rgba(0,0,0,.35)}}
+.pv-none{cursor:default}.pvr.pv-none,.pvr.pv-none:hover{box-shadow:none;border:1px dashed var(--dim);color:var(--dim);opacity:.7}.pvr.pv-none .pvi{background:transparent}.pvr.pv-none svg{width:16px;height:16px}
+.pvc.pv-none .pvi{opacity:1;background:rgba(0,0,0,.55);color:var(--dim)}
+.pvr.pv-unk{color:var(--dim);box-shadow:inset 0 0 0 1px var(--line)}.pv-unk .pvi svg{animation:pvb 1.4s ease-in-out infinite}
 .pv.busy .pvi svg{animation:pvb 1s ease-in-out infinite}@keyframes pvb{50%{opacity:.25}}
 .dur-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
 .ss-x{width:40px;height:40px;border-radius:50%;border:0;background:transparent;color:var(--dim);display:flex;align-items:center;justify-content:center}.ss-x:hover{color:var(--ink);background:var(--card)}
@@ -376,10 +379,46 @@ function cover(r, px, extra){
 // ---- Extraits (aperçus Deezer de 30 s, URL demandée à la volée car elle expire)
 const ICO_PLAY = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>';
 const ICO_PAUSE = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M7 5h3.6v14H7zM13.4 5H17v14h-3.4z" fill="currentColor"/></svg>';
-const PV = { a: null, k: '', busy: '', cache: new Map(), unlocked: false };
+const ICO_NONE = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M4 20L20 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+const PV = { a: null, k: '', busy: '', cache: new Map(), unlocked: false, pending: new Set() };
+// Disponibilité des extraits, gardée sur l'appareil (30 jours) : 'ok' | 'none' | 'unk'
+const PVA = ls.get('pvav', {});
+const pvState = k => { const c = PVA[k]; return !c || Date.now() - c.at > 30 * 864e5 ? 'unk' : c.ok ? 'ok' : 'none'; };
+function pvMark(k, ok){ PVA[k] = { ok: ok ? 1 : 0, at: Date.now() }; }
+function pvSave(){ const ks = Object.keys(PVA); if (ks.length > 6000) ks.sort((a, b) => PVA[a].at - PVA[b].at).slice(0, ks.length - 6000).forEach(k => delete PVA[k]); ls.set('pvav', PVA); }
+const pvLabel = (k, base) => { const st = pvState(k); return st === 'none' ? 'Pas d’extrait disponible pour ' + base : st === 'unk' ? 'Recherche d’un extrait pour ' + base + '…' : 'Écouter un extrait de ' + base; };
+let pvQ = Promise.resolve();
+function pvCheck(items){
+ if (!sb || !session || !CAN_NET) return;
+ const todo = items.filter(x => x && x.t && pvState(x.k) === 'unk' && !PV.pending.has(x.k));
+ if (!todo.length) return;
+ todo.forEach(x => PV.pending.add(x.k));
+ pvQ = pvQ.then(async () => {
+  for (const x of todo) if (isVarious(x.r) && !x.t.a) { await loadTracks(x.r).catch(() => {}); const t2 = x.r.tr && x.r.tr[x.i]; if (t2) x.t = t2; }
+  for (let j = 0; j < todo.length; j += 20) {
+   const part = todo.slice(j, j + 20);
+   try {
+    const { data, error } = await sb.functions.invoke('bpm', { body: { batch: part.map(x => ({ title: x.t.n, artist: lookupArtist(x.r, x.t) })) } });
+    if (!error && data && Array.isArray(data.results)) part.forEach((x, n) => { const d = data.results[n] || {}; pvMark(x.k, !!d.preview); if (d.preview) PV.cache.set(x.k, { url: d.preview, who: d.previewOf || '', at: Date.now() }); });
+   } catch (e) {}
+   part.forEach(x => PV.pending.delete(x.k)); pvSave(); pvSync();
+  }
+ }).catch(() => {});
+}
 const pvOn = k => PV.k === k && PV.a && !PV.a.paused;
-function pvBtn(k, cls, label, inner){ const on = pvOn(k); return `<button class="pv ${cls || ''}${on ? ' on' : ''}" data-k="${esc(k)}" aria-pressed="${on}" aria-label="${esc(label)}">${inner || ''}<span class="pvi">${on ? ICO_PAUSE : ICO_PLAY}</span></button>`; }
-function pvSync(){ document.querySelectorAll('.pv').forEach(b => { const on = pvOn(b.dataset.k), busy = b.dataset.k === PV.busy; b.classList.toggle('on', on); b.classList.toggle('busy', busy); b.setAttribute('aria-pressed', on); const i = b.querySelector('.pvi'); if (i) i.innerHTML = on ? ICO_PAUSE : ICO_PLAY; if (!on) b.style.removeProperty('--p'); }); }
+function pvBtn(k, cls, label, inner){ const on = pvOn(k), st = pvState(k); return `<button class="pv ${cls || ''}${on ? ' on' : ''} pv-${st}" data-k="${esc(k)}" data-l="${esc(label)}" aria-pressed="${on}" aria-label="${esc(pvLabel(k, label))}" title="${esc(st === 'none' ? 'Pas d’extrait disponible' : st === 'unk' ? 'Recherche d’un extrait…' : 'Écouter un extrait (30 s)')}"${st === 'none' ? ' aria-disabled="true"' : ''}>${inner || ''}<span class="pvi">${on ? ICO_PAUSE : st === 'none' ? ICO_NONE : ICO_PLAY}</span></button>`; }
+function pvSync(){
+ document.querySelectorAll('.pv').forEach(b => {
+  const k = b.dataset.k, on = pvOn(k), busy = k === PV.busy, st = pvState(k);
+  b.classList.toggle('on', on); b.classList.toggle('busy', busy);
+  ['ok', 'none', 'unk'].forEach(x => b.classList.toggle('pv-' + x, st === x));
+  b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', pvLabel(k, b.dataset.l || ''));
+  b.title = st === 'none' ? 'Pas d’extrait disponible' : st === 'unk' ? 'Recherche d’un extrait…' : 'Écouter un extrait (30 s)';
+  if (st === 'none') b.setAttribute('aria-disabled', 'true'); else b.removeAttribute('aria-disabled');
+  const i = b.querySelector('.pvi'); if (i) i.innerHTML = on ? ICO_PAUSE : st === 'none' ? ICO_NONE : ICO_PLAY; if (!on) b.style.removeProperty('--p');
+ });
+ document.querySelectorAll('[data-pvnote]').forEach(p => { const st = pvState(p.dataset.pvnote); p.innerHTML = st === 'none' ? 'Pas d’extrait disponible sur <a href="https://www.deezer.com" target="_blank" rel="noopener" style="color:inherit">Deezer</a> pour ce titre' : st === 'unk' ? 'Recherche d’un extrait sur Deezer…' : 'Extrait de 30 s fourni par <a href="https://www.deezer.com" target="_blank" rel="noopener" style="color:inherit">Deezer</a>'; });
+}
 function silentWav(){ const n = 400, b = new ArrayBuffer(44 + n), v = new DataView(b), w = (o, x) => [...x].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
  w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true);
  for (let i = 0; i < n; i++) v.setUint8(44 + i, 128); return URL.createObjectURL(new Blob([b], { type: 'audio/wav' })); }
@@ -410,11 +449,12 @@ async function pvToggle(k){
   } catch (e) { PV.busy = ''; pvSync(); flash(String(e.message).replace(/^BPM : /, 'Extrait : '), 5000); return; }
   PV.busy = '';
  }
+ pvMark(k, !!hit.url); pvSave();
  if (!hit.url) { pvSync(); flash('Pas d’extrait trouvé sur Deezer pour ce titre.', 3500); return; }
  PV.k = k; a.src = hit.url; a.play().catch(() => { PV.k = ''; pvSync(); flash('Touche encore lecture pour écouter.', 3000); });
  pvSync(); if (hit.who) flash('Extrait Deezer · ' + hit.who, 2500);
 }
-document.addEventListener('click', e => { const b = e.target.closest('.pv'); if (!b) return; e.preventDefault(); e.stopPropagation(); if (!session) { flash('Connecte-toi pour écouter les extraits.', 3000); return; } pvToggle(b.dataset.k); });
+document.addEventListener('click', e => { const b = e.target.closest('.pv'); if (!b) return; e.preventDefault(); e.stopPropagation(); if (!session) { flash('Connecte-toi pour écouter les extraits.', 3000); return; } if (pvState(b.dataset.k) === 'none') { flash('Pas d’extrait disponible pour ce titre.', 2500); return; } pvToggle(b.dataset.k); });
 addEventListener('hashchange', pvStop);
 const starTxt = s => s ? '★'.repeat(s) + '☆'.repeat(5 - s) : '';
 const starSvg = on => `<svg viewBox="0 0 24 24" fill="${on ? '#efe6d2' : 'none'}" aria-hidden="true"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1 6.3L12 17.5 6.5 20.4l1-6.3L3 9.7l6.2-.9z"/></svg>`;
@@ -695,12 +735,13 @@ async function vDisque(id){
  if (!tr) { try { tr = await loadTracks(r); } catch (e) { $('#tl').innerHTML = `<li class="note" style="padding:16px 0">${esc(e.message)}</li>`; return; } }
  if (location.hash.slice(1) !== 'disque-' + id) return;
  const drawTl = () => {
- $('#tl').innerHTML = tr.map((t, i) => { const n = note(key(r.id, i)); return `<li style="display:flex;align-items:center;gap:10px">${pvBtn(key(r.id, i), 'pvr', 'Écouter un extrait de ' + t.n)}<a class="rowl" href="#titre-${esc(r.id)}-${i}" style="flex:1;min-width:0;display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:12px">
+ $('#tl').innerHTML = tr.map((t, i) => { const n = note(key(r.id, i)); return `<li style="display:flex;align-items:center;gap:10px">${pvBtn(key(r.id, i), 'pvr', t.n)}<a class="rowl" href="#titre-${esc(r.id)}-${i}" style="flex:1;min-width:0;display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:12px">
   <span class="small dim">${esc(t.p)}</span>
   <span><span class="ell" style="display:block;font-size:16px;font-weight:400">${esc(t.n)}</span><span class="ell small mut" style="display:block">${n.s ? `<span style="letter-spacing:.1em">${starTxt(n.s)}</span>` : 'Pas encore noté'}${n.c ? ' · « ' + esc(n.c) + ' »' : ''}</span></span>
   <span style="text-align:right"><span style="display:block;font:400 24px/1 var(--serif)">${n.b ? esc(n.b) : '—'}</span><span style="font-size:11px" class="dim">BPM</span></span></a></li>`; }).join('') || '<li class="note" style="padding:16px 0">Pas de tracklist sur Discogs pour ce disque.</li>';
  };
  drawTl();
+ pvCheck(tr.map((t, i) => ({ r, t, i, k: key(r.id, i) })));
  autoBpm(r, () => { if (location.hash.slice(1) === 'disque-' + id) drawTl(); });
 }
 
@@ -713,8 +754,8 @@ function vTitre(id, i){
  <div style="max-width:680px">
  <div style="display:flex;align-items:center;gap:12px"><a class="ico" href="#disque-${esc(id)}" aria-label="Retour au disque"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>${cover(r, 34)}<span class="small mut ell">${esc(r.a)} — ${esc(r.t)}</span></div>
  <p class="lab" style="margin-top:20px">Face ${esc(t.p)}<span id="durLab">${durOf(t, n) ? ' · ' + esc(durOf(t, n)) : ''}</span></p>
- <div style="display:flex;align-items:center;gap:14px;margin-top:6px"><h1 style="margin:0;flex:1;min-width:0">${esc(t.n)}</h1>${pvBtn(k, 'pvr pvbig', 'Écouter un extrait de ' + t.n)}</div>
- <p class="small dim" style="margin:6px 0 0">Extrait de 30 s fourni par <a href="https://www.deezer.com" target="_blank" rel="noopener" style="color:inherit">Deezer</a></p>
+ <div style="display:flex;align-items:center;gap:14px;margin-top:6px"><h1 style="margin:0;flex:1;min-width:0">${esc(t.n)}</h1>${pvBtn(k, 'pvr pvbig', t.n)}</div>
+ <p class="small dim" style="margin:6px 0 0" data-pvnote="${esc(k)}"></p>
  <div class="dur-row"><label for="durIn" class="lab" style="margin:0">Durée</label><input class="in" id="durIn" inputmode="text" autocomplete="off" placeholder="${esc(autoDur(t, n) || 'm:ss')}" value="${esc(n.dm > 0 ? fmtClock(n.dm) : '')}" style="width:92px;min-height:42px;text-align:center"><span class="small dim" id="durSrc">${durFrom(t, n) ? (n.dm > 0 ? 'Saisie par toi' + (autoDur(t, n) ? ' · trouvée : ' + esc(autoDur(t, n)) : '') : 'Source : ' + durFrom(t, n) + ' · tu peux la corriger') : 'Pas de durée connue : écris-la (ex. 4:05)'}</span></div>
  <section class="panel" aria-label="Tempo">
   <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap">
@@ -743,6 +784,7 @@ function vTitre(id, i){
  const drawStars = () => { const s = note(k).s || 0; $('#stars').innerHTML = [1,2,3,4,5].map(v => `<button role="radio" aria-checked="${v === s}" aria-label="${v} sur 5" data-v="${v}">${starSvg(v <= s)}</button>`).join(''); };
  drawStars();
  $('#stars').onclick = e => { const b = e.target.closest('button'); if (!b) return; const v = +b.dataset.v; setNote(k, { s: note(k).s === v ? 0 : v }); drawStars(); };
+ pvSync(); pvCheck([{ r, t, i, k }]);
  const di = $('#durIn'), saveDur = () => {
   const sec = parseDur(di.value); const nn = note(k);
   if (sec === null) { $('#durSrc').textContent = 'Durée non comprise : écris-la comme 4:05.'; return; }
@@ -885,7 +927,7 @@ function vSound(){
  const bp = chosen.map(x => x.n.b).filter(Boolean), discs = new Map();
  chosen.forEach(x => { if (!discs.has(x.r.id)) discs.set(x.r.id, { r: x.r, p: [] }); discs.get(x.r.id).p.push(x.t.p); });
  const secs = chosen.reduce((a, x) => a + durSec(durOf(x.t, x.n)), 0), noDur = chosen.filter(x => !durSec(durOf(x.t, x.n))).length;
- fillDurations(chosen);
+ fillDurations(chosen); setTimeout(() => pvCheck(chosen), 0);
  if (curveObs) { curveObs.disconnect(); curveObs = null; }
  if (!chosen.length) {
   V.innerHTML = `<p class="lab">Ton set</p><h1 style="margin-top:6px">Sound <i class="s">system</i></h1>
@@ -909,7 +951,7 @@ function vSound(){
    <ol class="setl" id="setl">${chosen.map((x, i) => { const prev = i ? chosen[i - 1].n.b : 0, dlt = prev && x.n.b ? x.n.b - prev : 0; return `<li data-k="${esc(x.k)}">
     <button class="grip" aria-label="Déplacer ${esc(x.t.n)}, position ${i + 1} sur ${chosen.length}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg></button>
     <span class="ss-n">${i + 1}</span>
-    ${pvBtn(x.k, 'pvc', 'Écouter un extrait de ' + x.t.n, cover(x.r, 46))}
+    ${pvBtn(x.k, 'pvc', x.t.n, cover(x.r, 46))}
     <span class="ss-f" aria-label="Face ${esc(x.t.p || 'inconnue')}"><b>${esc(x.t.p || '?')}</b><span>face</span></span>
     <a class="ss-t" href="#titre-${esc(x.r.id)}-${x.i}"><span class="ell" style="display:block;font-size:16px;font-weight:400">${esc(x.t.n)}</span><span class="ell small mut" style="display:block">${esc(x.t.a || x.r.a)} · ${esc(x.r.t)}</span></a>
     <span class="ss-b"><b>${x.n.b || '—'}</b><span class="small dim">${dlt ? (dlt > 0 ? '+' : '') + dlt : 'BPM'}</span></span>
