@@ -135,13 +135,15 @@ body.ob main{max-width:540px;padding:max(4vh,22px) 22px 64px}
 .ss-n{font:400 20px var(--serif);color:var(--dim);text-align:center}
 .ss-t{text-decoration:none;min-width:0}
 .ss-b,.ss-d{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15}.ss-b b{font:400 26px/1 var(--serif)}.ss-d>span:first-child{font-size:14px}
+.ss-dur{border:0;background:transparent;color:inherit;font:inherit;font-size:14px;padding:6px 6px;margin:-6px -6px;border-radius:8px;cursor:pointer;font-variant-numeric:tabular-nums}.ss-dur:hover,.ss-dur:focus-visible{background:var(--card)}.ss-dur.own{text-decoration:underline dotted;text-underline-offset:3px}.ss-dur.add{color:var(--dim);font-size:12px;white-space:nowrap}.ss-din{width:56px;background:var(--card);color:var(--ink);border:1px solid var(--dim);border-radius:8px;padding:5px 6px;font:inherit;font-size:14px;text-align:right}
+.dur-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
 .ss-x{width:40px;height:40px;border-radius:50%;border:0;background:transparent;color:var(--dim);display:flex;align-items:center;justify-content:center}.ss-x:hover{color:var(--ink);background:var(--card)}
 .grip{width:30px;height:46px;border:0;background:transparent;color:var(--dim);display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none}
 .grip svg{fill:currentColor}.grip:active{cursor:grabbing;color:var(--ink)}
 .ss-side{align-self:start}
 .ss-discs{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:18px 14px}
 .ss-empty{margin-top:28px;padding:32px;border:1px dashed #3a3733;border-radius:18px}
-@media(max-width:600px){.setl li{grid-template-columns:26px 50px minmax(0,1fr) 46px 34px;gap:8px}.setl .ss-n,.ss-d,.setl li>.cv{display:none}.ss-stats dd{font-size:32px}}
+@media(max-width:600px){.setl li{grid-template-columns:26px 50px minmax(0,1fr) 42px 50px 34px;gap:8px}.setl .ss-n,.setl li>.cv{display:none}.ss-dur.add{font-size:11px}.ss-stats dd{font-size:32px}}
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);max-width:min(92vw,520px);text-align:center;background:var(--ink);color:#0a0a0a;padding:10px 18px;border-radius:999px;font-size:14px;font-weight:500;z-index:90;opacity:0;transition:opacity .25s;pointer-events:none}
 .toast.on{opacity:1}
 @media(min-width:900px){.toast{bottom:32px}}
@@ -659,8 +661,9 @@ function vTitre(id, i){
  V.innerHTML = `
  <div style="max-width:680px">
  <div style="display:flex;align-items:center;gap:12px"><a class="ico" href="#disque-${esc(id)}" aria-label="Retour au disque"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>${cover(r, 34)}<span class="small mut ell">${esc(r.a)} — ${esc(r.t)}</span></div>
- <p class="lab" style="margin-top:20px">Face ${esc(t.p)}${durOf(t, n) ? ' · ' + esc(durOf(t, n)) : ''}</p>
+ <p class="lab" style="margin-top:20px">Face ${esc(t.p)}<span id="durLab">${durOf(t, n) ? ' · ' + esc(durOf(t, n)) : ''}</span></p>
  <h1 style="margin-top:6px">${esc(t.n)}</h1>
+ <div class="dur-row"><label for="durIn" class="lab" style="margin:0">Durée</label><input class="in" id="durIn" inputmode="text" autocomplete="off" placeholder="${esc(autoDur(t, n) || 'm:ss')}" value="${esc(n.dm > 0 ? fmtClock(n.dm) : '')}" style="width:92px;min-height:42px;text-align:center"><span class="small dim" id="durSrc">${durFrom(t, n) ? (n.dm > 0 ? 'Saisie par toi' + (autoDur(t, n) ? ' · trouvée : ' + esc(autoDur(t, n)) : '') : 'Source : ' + durFrom(t, n) + ' · tu peux la corriger') : 'Pas de durée connue : écris-la (ex. 4:05)'}</span></div>
  <section class="panel" aria-label="Tempo">
   <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap">
    <div style="display:flex;align-items:baseline;gap:10px"><span class="bpm" id="bpmv">${n.b ? esc(n.b) : '—'}</span><span class="small mut">BPM${n.k ? ' · ' + esc(n.k) : ''}</span></div>
@@ -688,6 +691,16 @@ function vTitre(id, i){
  const drawStars = () => { const s = note(k).s || 0; $('#stars').innerHTML = [1,2,3,4,5].map(v => `<button role="radio" aria-checked="${v === s}" aria-label="${v} sur 5" data-v="${v}">${starSvg(v <= s)}</button>`).join(''); };
  drawStars();
  $('#stars').onclick = e => { const b = e.target.closest('button'); if (!b) return; const v = +b.dataset.v; setNote(k, { s: note(k).s === v ? 0 : v }); drawStars(); };
+ const di = $('#durIn'), saveDur = () => {
+  const sec = parseDur(di.value); const nn = note(k);
+  if (sec === null) { $('#durSrc').textContent = 'Durée non comprise : écris-la comme 4:05.'; return; }
+  if (sec !== (nn.dm || 0)) setNote(k, { dm: sec });
+  const n2 = note(k), a = autoDur(t, n2);
+  di.value = sec ? fmtClock(sec) : '';
+  $('#durLab').textContent = durOf(t, n2) ? ' · ' + durOf(t, n2) : '';
+  $('#durSrc').textContent = sec ? 'Saisie par toi' + (a ? ' · trouvée : ' + a : '') : a ? 'Source : ' + durFrom(t, n2) + ' · tu peux la corriger' : 'Pas de durée connue : écris-la (ex. 4:05)';
+ };
+ di.onchange = saveDur; di.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); di.blur(); } };
  let ct = 0; $('#com').oninput = e => { clearTimeout(ct); ct = setTimeout(() => setNote(k, { c: e.target.value.trim() }), 600); };
  $('#set').onclick = () => { const v = !note(k).set; setNote(k, { set: v }); $('#set').textContent = v ? '✓ Dans mon sound system' : 'Ajouter au sound system'; };
  const putBpm = (b, src, extra) => {
@@ -730,12 +743,22 @@ function vTitre(id, i){
 }
 
 const fmtClock = s => { const m = Math.floor(s / 60), x = Math.round(s % 60); return m + ':' + String(x).padStart(2, '0'); };
-const durOf = (t, n) => (t && t.d) || (n && n.du && n.dv === 2 ? fmtClock(n.du) : '');
+const durOf = (t, n) => (n && n.dm > 0 ? fmtClock(n.dm) : '') || (t && t.d) || (n && n.du && n.dv === 2 ? fmtClock(n.du) : '');
+const autoDur = (t, n) => (t && t.d) || (n && n.du && n.dv === 2 ? fmtClock(n.du) : '');
+const durFrom = (t, n) => n && n.dm > 0 ? 'saisie par toi' : t && t.d ? 'Discogs' : n && n.du && n.dv === 2 ? 'Deezer' : '';
+// « 4:05 », « 4.05 », « 4'05 », « 4 05 », « 4 » (minutes) → secondes ; '' → 0 (retour à l'auto) ; invalide → null
+function parseDur(v){
+ v = String(v || '').trim(); if (!v) return 0;
+ let m = v.match(/^(\d{1,2})\s*(?:[:.,'’h ]|min|m)\s*(\d{1,2})\s*(?:s|")?$/i);
+ if (m) { const sec = +m[2]; if (sec > 59) return null; const t = +m[1] * 60 + sec; return t > 0 ? t : null; }
+ m = v.match(/^(\d{1,2})\s*(?:min|m|:)?$/i); if (m && +m[1] > 0) return +m[1] * 60;
+ return null;
+}
 const DUR_MISS = new Set(ls.get('durmiss2', []));
 let durFill = null;
 function fillDurations(items){
  if (durFill || !session) return;
- const todo = items.filter(x => (!durOf(x.t, x.n) && !DUR_MISS.has(x.k)) || (isVarious(x.r) && x.n.b && /Deezer|GetSongBPM/.test(x.n.src || '') && x.n.bv !== 2)); if (!todo.length) return;
+ const todo = items.filter(x => (!durOf(x.t, x.n) && !DUR_MISS.has(x.k) && !(x.n.dm > 0)) || (isVarious(x.r) && x.n.b && /Deezer|GetSongBPM/.test(x.n.src || '') && x.n.bv !== 2)); if (!todo.length) return;
  durFill = (async () => {
   for (const x of todo) {
    try {
@@ -838,7 +861,7 @@ function vSound(){
     <span class="ss-f" aria-label="Face ${esc(x.t.p || 'inconnue')}"><b>${esc(x.t.p || '?')}</b><span>face</span></span>
     <a class="ss-t" href="#titre-${esc(x.r.id)}-${x.i}"><span class="ell" style="display:block;font-size:16px;font-weight:400">${esc(x.t.n)}</span><span class="ell small mut" style="display:block">${esc(x.t.a || x.r.a)} · ${esc(x.r.t)}</span></a>
     <span class="ss-b"><b>${x.n.b || '—'}</b><span class="small dim">${dlt ? (dlt > 0 ? '+' : '') + dlt : 'BPM'}</span></span>
-    <span class="ss-d"><span>${esc(durOf(x.t, x.n) || '—')}</span></span>
+    <span class="ss-d">${durOf(x.t, x.n) ? `<button class="ss-dur${x.n.dm > 0 ? ' own' : ''}" data-k="${esc(x.k)}" aria-label="Durée de ${esc(x.t.n)} : ${esc(durOf(x.t, x.n))}. Modifier">${esc(durOf(x.t, x.n))}</button>` : `<button class="ss-dur add" data-k="${esc(x.k)}" aria-label="Ajouter la durée de ${esc(x.t.n)}">+ durée</button>`}</span>
     <button class="ss-x" data-k="${esc(x.k)}" aria-label="Retirer ${esc(x.t.n)} du sound system"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
    </li>`; }).join('')}</ol>
   </section>
@@ -883,7 +906,27 @@ function vSound(){
  const end = () => { if (!drag) return; const { idx, to, rows, li } = drag; drag = null; rows.forEach(r => { r.style.transform = ''; }); li.classList.remove('drag'); if (to !== idx) moveSet(idx, to); };
  list.addEventListener('pointerup', end); list.addEventListener('pointercancel', end);
  list.addEventListener('keydown', e => { const g = e.target.closest('.grip'); if (!g) return; const i = [...list.children].indexOf(g.closest('li')); if (e.key === 'ArrowUp' && i > 0) { e.preventDefault(); moveSet(i, i - 1, true); } if (e.key === 'ArrowDown' && i < list.children.length - 1) { e.preventDefault(); moveSet(i, i + 1, true); } });
- list.addEventListener('click', e => { const x = e.target.closest('.ss-x'); if (!x) return; toggleSet(x.dataset.k); rerender(); });
+ list.addEventListener('click', e => {
+  const x = e.target.closest('.ss-x'); if (x) { toggleSet(x.dataset.k); rerender(); return; }
+  const d = e.target.closest('.ss-dur'); if (!d) return;
+  const k = d.dataset.k, it = chosen.find(c => c.k === k); if (!it) return;
+  const cell = d.parentNode, cur = it.n.dm > 0 ? fmtClock(it.n.dm) : '';
+  cell.innerHTML = `<input class="ss-din" inputmode="text" autocomplete="off" placeholder="${esc(autoDur(it.t, it.n) || 'm:ss')}" value="${esc(cur || autoDur(it.t, it.n))}" aria-label="Durée de ${esc(it.t.n)}, en minutes:secondes. Vide pour revenir à la durée trouvée automatiquement.">`;
+  const inp = cell.firstChild; inp.focus(); inp.select();
+  let done = false;
+  const finish = save => {
+   if (done) return; done = true;
+   if (save) {
+    const v = inp.value.trim(), auto = autoDur(it.t, it.n);
+    const sec = v === auto && !(it.n.dm > 0) ? 0 : parseDur(v);
+    if (sec === null) { flash('Durée non comprise : écris-la comme 4:05.', 4000); }
+    else if (sec !== (it.n.dm || 0)) setNote(k, { dm: sec });
+   }
+   rerender();
+  };
+  inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); finish(true); } else if (ev.key === 'Escape') { ev.preventDefault(); finish(false); } });
+  inp.addEventListener('blur', () => finish(true));
+ });
  $('#copy').onclick = async () => { const txt = `Sound system — ${chosen.length} titres${secs ? ' · ' + fmtDur(secs) : ''}\n` + chosen.map((x, i) => `${i + 1}. ${x.n.b || '—'} BPM · ${x.t.n} — ${x.t.a || x.r.a} (${x.r.t}, ${x.t.p})${durOf(x.t, x.n) ? ' · ' + durOf(x.t, x.n) : ''}${x.n.c ? ' · ' + x.n.c : ''}`).join('\n') + `\n\nDisques à sortir : ` + [...discs.values()].map(d => `${d.r.t} (${d.p.join(', ')})`).join(' · '); try { await navigator.clipboard.writeText(txt); flash('Liste copiée'); } catch (e) { flash('Copie refusée par le navigateur'); } };
  const cl = $('#clear');
  cl.onclick = () => { if (!cl.dataset.ok) { cl.dataset.ok = 1; cl.textContent = 'Confirmer'; return; } chosen.forEach(x => { NOTES[x.k] = Object.assign({}, x.n, { set: false, t: Date.now() }); }); NOTES['set:order'] = { order: [], t: Date.now() }; saveNotes([...chosen.map(x => x.k), 'set:order']); vSound(); };
