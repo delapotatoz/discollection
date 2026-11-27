@@ -1,6 +1,7 @@
 // Discollection : cherche le tempo, la tonalité et la durée d'un titre.
 // Tempo : GetSongBPM si le secret GETSONGBPM_KEY est défini, sinon Deezer (API publique, sans clé).
 // Durée : Deezer, pour compléter les titres sans durée sur Discogs.
+// Extrait : aperçu de 30 s fourni par Deezer (URL signée qui expire, donc jamais stockée).
 // L'artiste est obligatoire : sur une compilation, c'est l'artiste du morceau (pas « Various »).
 // Seuls les utilisateurs connectés peuvent appeler cette fonction (vérification JWT).
 
@@ -17,7 +18,7 @@ const json = (body: unknown, status = 200) =>
 const clean = (s: string) => s.replace(/\s*[\(\[].*?[\)\]]\s*/g, " ").replace(/\s+/g, " ").trim();
 const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
-type DzTrack = { id: number; title: string; duration: number; artist?: { name: string } };
+type DzTrack = { id: number; title: string; duration: number; preview?: string; link?: string; artist?: { name: string } };
 
 const artistOk = (want: string, got: string) => {
   const a = norm(want), g = norm(got);
@@ -86,11 +87,13 @@ Deno.serve(async (req) => {
     if (!title) return json({ error: "Titre manquant" }, 400);
     const dz = await deezerSearch(title, artist).catch(() => []);
     const duration = want.includes("duration") ? pickDuration(dz) : 0;
+    const pv = want.includes("preview") ? dz.find((x) => x.preview) : undefined;
+    const extra = pv ? { preview: pv.preview, link: pv.link ?? "", previewOf: `${pv.artist?.name ?? ""} – ${pv.title}` } : {};
     let hit = null;
     if (want.includes("bpm")) {
       hit = artist ? ((await fromGetSongBpm(title, artist).catch(() => null)) ?? (await bpmFromDeezer(dz).catch(() => null))) : null;
     }
-    return json(hit ? { found: true, ...hit, duration } : { found: false, duration });
+    return json(hit ? { found: true, ...hit, duration, ...extra } : { found: false, duration, ...extra });
   } catch (e) {
     return json({ error: String(e) }, 500);
   }
