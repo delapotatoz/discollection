@@ -267,7 +267,7 @@ function flushNotes(){
  return writing;
 }
 function saveLib(){ if (session) ls.set('lib.' + uid(), LIB); }
-function acctMsg(e){ const m = String((e && e.message) || e || ''); return /relation|does not exist|schema cache|PGRST2/i.test(m) ? 'Les tables Supabase manquent : lance le code SQL dans le SQL Editor de ton projet.' : /row-level security|permission denied|42501/i.test(m) ? 'Supabase refuse l’accès au profil : vérifie les règles (policies) du code SQL.' : 'Supabase : ' + (m || 'erreur inconnue'); }
+function acctMsg(e){ const m = String((e && e.message) || e || ''); return /relation|does not exist|schema cache|PGRST2/i.test(m) ? 'Les tables Supabase manquent : lance le code SQL dans le SQL Editor de ton projet.' : /row-level security|permission denied|42501/i.test(m) ? 'Supabase refuse l’accès au profil (droits ou règles du code SQL). Détail : ' + m : 'Supabase : ' + (m || 'erreur inconnue'); }
 let acctErr = '';
 async function ensureProfile(){ if (profile) return; try { await loadAccount(); acctErr = ''; } catch (e) { acctErr = acctMsg(e); throw new Error(acctErr); } }
 async function saveProfile(patch){

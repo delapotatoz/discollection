@@ -20,6 +20,11 @@ create table if not exists public.notes (
   primary key (user_id, k)
 );
 
+-- Droits sur les tables pour les utilisateurs connectés
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on public.profiles to authenticated;
+grant select, insert, update, delete on public.notes to authenticated;
+
 alter table public.profiles enable row level security;
 alter table public.notes enable row level security;
 
