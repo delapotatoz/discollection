@@ -627,26 +627,14 @@ async function matchInLib(res){
 
 /* ---------- Vues ---------- */
 function vBacs(){
- const B = bins(), tracks = allTracks();
+ const B = bins();
  if (!LIB.length) { V.innerHTML = importing ? `<h1>Ta collection <i class="s">arrive…</i></h1><p class="mut">Import depuis Discogs en cours.</p>` : `<h1>Tes bacs sont <i class="s">vides</i></h1><p class="mut" style="margin:12px 0 22px">Relie ta collection Discogs pour ranger tes disques en bacs.</p><a class="btn" href="#etape-discogs">Relier ma collection</a>`; return; }
- const day = B[new Date().getDate() % B.length];
- const rated = tracks.filter(x => x.n.s).length, bpm = tracks.filter(x => x.n.b).length;
  V.innerHTML = `
  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap">
   <div><p class="lab">${LIB.length} disques · ${B.length} bacs${DEMO_ON && !session ? ' · collection de démonstration' : ''}</p><h1 style="margin-top:6px">Mes bacs</h1></div>
   ${CAN_MIC && S.audd ? `<button class="btn2" id="recog"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Reconnaître ce qui tourne</button>` : ''}
  </div>
- <div class="grid2 sec" style="margin-top:28px;align-items:center">
-  <a href="#bac-${esc(day.s)}" style="display:block;position:relative;height:230px;text-decoration:none" aria-label="Fouiller le bac ${esc(day.g)}">
-   ${day.rs.slice(0, 3).reverse().map((r, j) => cover(r, 200 - (2 - j) * 20, `position:absolute;left:${(2 - j) * 58}px;top:${(2 - j) * 10}px;filter:brightness(${j === 2 ? 1 : .55 + j * .15});box-shadow:0 24px 50px rgba(0,0,0,.8)`)).join('')}
-  </a>
-  <div>
-   <p class="lab">Bac du jour</p><h2 style="font-size:clamp(34px,5vw,48px);margin-top:4px">${esc(day.g)}</h2>
-   <p class="mut small" style="margin:8px 0 18px">${day.rs.length} disque${day.rs.length > 1 ? 's' : ''} · ${rated} titre${rated > 1 ? 's' : ''} noté${rated > 1 ? 's' : ''} et ${bpm} BPM connu${bpm > 1 ? 's' : ''} dans ta collection</p>
-   <a class="btn" href="#bac-${esc(day.s)}">Fouiller ce bac</a>
-  </div>
- </div>
- <label class="field sec"><span>Chercher un disque ou un artiste</span><input class="in" id="q" type="search" autocomplete="off" placeholder="Kaya Dread, Nuit Bleue…"></label>
+ <label class="field" style="margin-top:28px"><span>Chercher un disque ou un artiste</span><input class="in" id="q" type="search" autocomplete="off" placeholder="Kaya Dread, Nuit Bleue…"></label>
  <ul class="list" id="res" style="margin-top:12px"></ul>
  <h2 class="sec" style="margin-bottom:6px">Tous les bacs</h2>
  <div class="bins">${B.map(b => { const f = b.rs[0], back = b.rs.slice(1, 4); return `<a class="bin" href="#bac-${esc(b.s)}" aria-label="Bac ${esc(b.g)}, ${b.rs.length} disques">
