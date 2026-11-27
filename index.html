@@ -755,7 +755,8 @@ function vWelcome(){
  ${bootMsg ? `<p class="err">${esc(bootMsg)}</p>` : ''}
  ${sb ? `<div class="obb"><a class="btn" href="#inscription">Créer mon compte</a><a class="btn2" href="#connexion">Se connecter</a></div>`
       : `<p class="note" style="margin-top:22px">La création de compte n’est pas encore activée sur cette adresse.</p>`}
- <button class="linkb" id="demo">Essayer avec une collection de démonstration</button>`;
+ <button class="linkb" id="demo">Essayer avec une collection de démonstration</button>
+ <p class="credit" style="text-align:center;margin-top:36px">Tempo et tonalité fournis par <a href="https://getsongbpm.com">GetSongBPM.com</a> · Collection via Discogs</p>`;
  bootMsg = '';
  $('#demo').onclick = () => { enterDemo(); setMode(); location.hash = 'bacs'; };
 }
