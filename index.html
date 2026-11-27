@@ -340,13 +340,13 @@ let importing = null;
 function mergeLib(lib){ const old = new Map(LIB.map(r => [r.id, r])); LIB = lib.map(r => old.get(r.id) && old.get(r.id).tr ? Object.assign(r, { tr: old.get(r.id).tr }) : r); }
 function bgImport(){
  if (importing || !S.token || !S.user) return;
- importing = importDiscogs(() => {}).then(lib => { mergeLib(lib); saveLib(); importing = null; if ((location.hash.slice(1) || 'bacs') === 'bacs') route(); }).catch(() => { importing = null; });
+ importing = importDiscogs(() => {}).then(lib => { mergeLib(lib); saveLib(); importing = null; const h = location.hash.slice(1) || 'bacs'; if (['bacs','notes','systeme'].includes(h)) { const y = scrollY; route(); scrollTo(0, y); } }).catch(() => { importing = null; });
 }
 
 const key = (rid, i) => rid + ':' + i;
 const note = k => NOTES[k] || {};
 function setNote(k, patch){
- const n = Object.assign({}, note(k), patch, { t: Date.now() });
+ const n = withMeta(k, Object.assign({}, note(k), patch, { t: Date.now() }));
  NOTES[k] = n; saveNotes(k); flash('Enregistré');
 }
 let toastT = 0;
@@ -380,9 +380,36 @@ function bins(){
  const out = [...m.entries()].map(([g, rs]) => ({ g, s: slug(g), rs: rs.slice().sort((a, b) => a.a.localeCompare(b.a, 'fr')) }));
  return S.rangement === 'decennie' ? out.sort((a, b) => (+a.rs[0].y || 9999) - (+b.rs[0].y || 9999)) : out.sort((a, b) => b.rs.length - a.rs.length);
 }
+const NKEY = /^(.+):(\d+)$/;
+const isTrackKey = k => NKEY.test(k) && !k.startsWith('bac:') && !k.startsWith('set:');
+function trackOf(r, i, n){ if (r.tr && r.tr[i]) return r.tr[i]; if (n && n.tn) return { p: n.tp || '', n: n.tn, d: n.td || '' }; return null; }
+function withMeta(k, n){ const m = NKEY.exec(k); if (!m || !isTrackKey(k)) return n; const r = byId(m[1]), t = r && r.tr && r.tr[+m[2]]; return t ? Object.assign(n, { tn: t.n, tp: t.p, td: t.d }) : n; }
+let trackFill = null;
+const sleep = ms => new Promise(res => setTimeout(res, ms));
+function fillMissing(rs){
+ if (trackFill || !CAN_NET || !S.token || !rs.length) return;
+ trackFill = (async () => {
+  for (const r of rs) {
+   try {
+    await loadTracks(r);
+    const fixed = [];
+    for (const [k, n] of Object.entries(NOTES)) { const m = NKEY.exec(k); if (m && m[1] === r.id && isTrackKey(k) && !n.tn) { withMeta(k, n); if (n.tn) fixed.push(k); } }
+    if (fixed.length) saveNotes(fixed);
+   } catch (e) { if (/429/.test(String(e.message))) await sleep(6000); }
+   await sleep(1100);
+  }
+ })().finally(() => { trackFill = null; const h = location.hash.slice(1); if (h === 'notes' || h === 'systeme') { const y = scrollY; route(); scrollTo(0, y); } });
+}
 function allTracks(){
- const out = [];
- for (const r of LIB) (r.tr || []).forEach((t, i) => { const k = key(r.id, i), n = NOTES[k]; if (n) out.push({ r, t, i, k, n }); });
+ const out = [], missing = new Set();
+ for (const [k, n] of Object.entries(NOTES)) {
+  if (!n || !isTrackKey(k)) continue;
+  const m = NKEY.exec(k), r = byId(m[1]); if (!r) continue;
+  const i = +m[2], t = trackOf(r, i, n);
+  if (!t) { missing.add(r); continue; }
+  out.push({ r, t, i, k, n });
+ }
+ if (missing.size) fillMissing([...missing]);
  return out;
 }
 
@@ -441,7 +468,7 @@ async function autoBpm(r, onUpdate){
  try {
   for (let i = 0; i < r.tr.length; i++) {
    const k = key(r.id, i); if (note(k).b || GSB_MISS.has(k)) continue;
-   try { const x = await gsbLookup(r, r.tr[i]); NOTES[k] = Object.assign({}, note(k), { b: x.b, k: x.k, src: x.src, t: Date.now() }); saveNotes(k); if (onUpdate) onUpdate(i); }
+   try { const x = await gsbLookup(r, r.tr[i]); NOTES[k] = withMeta(k, Object.assign({}, note(k), { b: x.b, k: x.k, src: x.src, t: Date.now() })); saveNotes(k); if (onUpdate) onUpdate(i); }
    catch (e) { if (/absent/.test(e.message)) { GSB_MISS.add(k); ls.set('bpmmiss', [...GSB_MISS].slice(-5000)); } else break; }
    await new Promise(res => setTimeout(res, 250));
   }
@@ -707,7 +734,7 @@ function setChosen(){
 }
 function toggleSet(k){
  const on = !note(k).set, cur = setChosen().map(x => x.k).filter(x => x !== k);
- NOTES[k] = Object.assign({}, note(k), { set: on, t: Date.now() });
+ NOTES[k] = withMeta(k, Object.assign({}, note(k), { set: on, t: Date.now() }));
  NOTES['set:order'] = { order: on ? [...cur, k] : cur, t: Date.now() };
  saveNotes([k, 'set:order']);
  flash(on ? 'Ajouté au sound system' : 'Retiré du sound system');
@@ -753,8 +780,6 @@ function vSound(){
  const bp = chosen.map(x => x.n.b).filter(Boolean), discs = new Map();
  chosen.forEach(x => { if (!discs.has(x.r.id)) discs.set(x.r.id, { r: x.r, p: [] }); discs.get(x.r.id).p.push(x.t.p); });
  const secs = chosen.reduce((a, x) => a + durSec(x.t.d), 0), noDur = chosen.filter(x => !durSec(x.t.d)).length;
- let acc = 0, approx = false;
- const starts = chosen.map(x => { const s = acc; const d = durSec(x.t.d); if (!d) approx = true; acc += d || 240; return { s, approx }; });
  if (curveObs) { curveObs.disconnect(); curveObs = null; }
  if (!chosen.length) {
   V.innerHTML = `<p class="lab">Ton set</p><h1 style="margin-top:6px">Sound <i class="s">system</i></h1>
@@ -781,7 +806,7 @@ function vSound(){
     ${cover(x.r, 46)}
     <a class="ss-t" href="#titre-${esc(x.r.id)}-${x.i}"><span class="ell" style="display:block;font-size:16px;font-weight:400">${esc(x.t.n)}</span><span class="ell small mut" style="display:block">${esc(x.r.a)} · ${esc(x.r.t)} · face ${esc(x.t.p)}</span></a>
     <span class="ss-b"><b>${x.n.b || '—'}</b><span class="small dim">${dlt ? (dlt > 0 ? '+' : '') + dlt : 'BPM'}</span></span>
-    <span class="ss-d"><span>${esc(x.t.d || '—')}</span><span class="small dim">${starts[i].approx ? '≈ ' : ''}à ${fmtClock(starts[i].s)}</span></span>
+    <span class="ss-d"><span>${esc(x.t.d || '—')}</span></span>
     <button class="ss-x" data-k="${esc(x.k)}" aria-label="Retirer ${esc(x.t.n)} du sound system"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
    </li>`; }).join('')}</ol>
   </section>
