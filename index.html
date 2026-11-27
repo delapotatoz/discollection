@@ -366,6 +366,12 @@ function vBacs(){
  const rb = $('#recog'); if (rb) rb.addEventListener('click', recognizeFlow);
 }
 
+let bacGo = null;
+document.addEventListener('keydown', e => {
+ if (!bacGo || e.altKey || e.ctrlKey || e.metaKey || /^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName || ''))) return;
+ if (e.key === 'ArrowRight') { e.preventDefault(); bacGo(1); }
+ if (e.key === 'ArrowLeft') { e.preventDefault(); bacGo(-1); }
+});
 function vBac(s){
  const b = bins().find(x => x.s === s);
  if (!b) { location.hash = 'bacs'; return; }
@@ -379,10 +385,11 @@ function vBac(s){
   <div>
    <div id="info"></div>
    <div style="display:flex;gap:10px;margin-top:22px;flex-wrap:wrap"><button class="ico" id="prev" aria-label="Pochette précédente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><button class="ico" id="next" aria-label="Pochette suivante"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button><a class="btn" id="open">Sortir du bac</a></div>
-   <p class="note" style="margin-top:14px">Utilise les flèches pour feuilleter.</p>
+   <p class="note" style="margin-top:14px">Utilise les flèches ← → pour feuilleter le bac.</p>
   </div>
  </div>
-</div>`;
+ <h2 class="sec" style="margin-bottom:14px">Tout le bac</h2>
+ <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:26px 18px">${b.rs.map(r => `<a href="#disque-${esc(r.id)}" style="text-decoration:none">${cover(r, 150, 'width:100%;height:auto;aspect-ratio:1;box-shadow:0 14px 30px rgba(0,0,0,.6)')}<span class="ell" style="display:block;margin-top:10px;font:400 20px/1.1 var(--serif)">${esc(r.t)}</span><span class="ell small mut" style="display:block">${esc(r.a)}</span></a>`).join('')}</div>`;
  const draw = dir => {
   const i = crateIdx[s], r = b.rs[i], behind = b.rs.slice(i + 1, i + 5);
   $('#stage').innerHTML = `<div class="amb" aria-hidden="true">${im(r) || `<div style="background:${coverCss(r)}"></div>`}</div>
@@ -396,7 +403,8 @@ function vBac(s){
  };
  const go = d => { const n = Math.max(0, Math.min(b.rs.length - 1, crateIdx[s] + d)); if (n === crateIdx[s]) return; crateIdx[s] = n; draw(d > 0 ? 'next' : 'prev'); };
  $('#prev').onclick = () => go(-1); $('#next').onclick = () => go(1);
- $('#stage').addEventListener('keydown', e => { if (e.key === 'ArrowRight') { e.preventDefault(); go(1); } if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); } if (e.key === 'Enter') location.hash = 'disque-' + b.rs[crateIdx[s]].id; });
+ bacGo = go;
+ $('#stage').addEventListener('keydown', e => { if (e.key === 'Enter') location.hash = 'disque-' + b.rs[crateIdx[s]].id; });
  draw();
 }
 
@@ -602,7 +610,7 @@ function route(){
  const h = location.hash.slice(1) || 'bacs'; let m;
  const tab = h.startsWith('systeme') ? 'systeme' : h.startsWith('profil') ? 'profil' : 'bacs';
  document.querySelectorAll('[data-tab]').forEach(a => { if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
- window.scrollTo(0, 0);
+ window.scrollTo(0, 0); bacGo = null;
  if (h === 'systeme') vSysteme();
  else if (h === 'profil') vProfil();
  else if (m = h.match(/^bac-([a-z0-9-]+)$/)) vBac(m[1]);
