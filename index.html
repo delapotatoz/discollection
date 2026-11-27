@@ -119,7 +119,7 @@ body.ob main{max-width:540px;padding:max(4vh,22px) 22px 64px}
 .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:24px 0 0;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 @media(max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px}.fan .sl{width:150px;height:150px;margin-left:-75px;transform:translateX(calc(var(--k) * 44px)) rotate(calc(var(--k) * 7deg))}.fan{height:224px}}
 #modeTag a{color:var(--mut);text-underline-offset:3px}
-.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:#0a0a0a;padding:10px 18px;border-radius:999px;font-size:14px;font-weight:500;z-index:90;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);max-width:min(92vw,520px);text-align:center;background:var(--ink);color:#0a0a0a;padding:10px 18px;border-radius:999px;font-size:14px;font-weight:500;z-index:90;opacity:0;transition:opacity .25s;pointer-events:none}
 .toast.on{opacity:1}
 @media(min-width:900px){.toast{bottom:32px}}
 .listen{position:relative;width:200px;height:200px;margin:20px auto}
@@ -327,7 +327,7 @@ function setNote(k, patch){
  NOTES[k] = n; saveNotes(k); flash('Enregistré');
 }
 let toastT = 0;
-function flash(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 1600); }
+function flash(msg, ms){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms || 1600); }
 
 /* ---------- Helpers ---------- */
 const byId = id => LIB.find(r => r.id === id);
@@ -652,7 +652,7 @@ function vTitre(id, i){
   tool.onclick = e => { const b = e.target.closest('[data-b]'); if (!b) return; putBpm(+b.dataset.b, src); tool.innerHTML = ''; };
  };
  const gsb = $('#gsb');
- if (gsb) gsb.onclick = async () => { gsb.disabled = true; gsb.textContent = 'Recherche…'; try { const x = await gsbLookup(r, t); putBpm(x.b, 'GetSongBPM', { k: x.k }); } catch (e) { if (/absent/.test(e.message)) { GSB_MISS.add(k); ls.set('gsbmiss', [...GSB_MISS].slice(-5000)); $('#src').textContent = 'Absent de GetSongBPM : mesure-le au micro, sur un enregistrement ou en tapant le tempo.'; } else { $('#src').textContent = e.message; flash('Recherche du BPM impossible'); } } gsb.disabled = false; gsb.textContent = 'Chercher sur GetSongBPM'; };
+ if (gsb) gsb.onclick = async () => { gsb.disabled = true; gsb.textContent = 'Recherche…'; try { const x = await gsbLookup(r, t); putBpm(x.b, 'GetSongBPM', { k: x.k }); } catch (e) { if (/absent/.test(e.message)) { GSB_MISS.add(k); ls.set('gsbmiss', [...GSB_MISS].slice(-5000)); $('#src').textContent = 'Absent de GetSongBPM : mesure-le au micro, sur un enregistrement ou en tapant le tempo.'; } else { $('#src').textContent = e.message; flash(e.message, 6000); } } gsb.disabled = false; gsb.textContent = 'Chercher sur GetSongBPM'; };
  if (gsb && !n.b && !GSB_MISS.has(k)) gsb.click();
  const mic = $('#mic');
  if (mic) mic.onclick = async () => {
