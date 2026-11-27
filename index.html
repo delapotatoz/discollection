@@ -119,13 +119,28 @@ body.ob main{max-width:540px;padding:max(4vh,22px) 22px 64px}
 .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:24px 0 0;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 @media(max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px}.fan .sl{width:150px;height:150px;margin-left:-75px;transform:translateX(calc(var(--k) * 44px)) rotate(calc(var(--k) * 7deg))}.fan{height:224px}}
 #modeTag a{color:var(--mut);text-underline-offset:3px}
-.setsum{display:flex;gap:22px;flex-wrap:wrap;margin:12px 0 14px;padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.setsum>div{display:flex;flex-direction:column}.setsum .big{font:400 30px/1 var(--serif)}
+.tabs .tab{min-width:64px}
+.nfil{display:flex;flex-wrap:wrap;gap:16px 36px;margin-top:24px}.nfil .field{flex:1 1 100%}
+.ss-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.ss-stats{display:flex;gap:clamp(18px,4vw,44px);margin:0}
+.ss-stats div{display:flex;flex-direction:column-reverse}.ss-stats dt{font-size:13px;color:var(--dim)}.ss-stats dd{margin:0;font:400 clamp(34px,5vw,52px)/1 var(--serif)}
+.ss-curve{position:relative;margin:26px 0 0;height:150px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.ss-curve svg{position:absolute;inset:0;width:100%;height:100%;font-family:Inter,sans-serif}
+.ss-grid{display:grid;gap:clamp(28px,4vw,56px);margin-top:30px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:1000px){.ss-grid{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}}
 .setl{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
-.setl li{display:grid;grid-template-columns:36px 20px 40px minmax(0,1fr) auto;gap:8px;align-items:center;min-height:52px;border-bottom:1px solid var(--soft);background:var(--card);transition:transform .15s ease}
-.setl li.drag{transition:none;z-index:5;position:relative;box-shadow:0 14px 30px rgba(0,0,0,.6);border-radius:10px;outline:1px solid #3a3733}
-.grip{width:36px;height:46px;border:0;background:transparent;color:var(--dim);display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none}
+.setl li{display:grid;grid-template-columns:30px 26px 46px minmax(0,1fr) 54px 64px 40px;gap:10px;align-items:center;min-height:70px;border-bottom:1px solid var(--soft);background:var(--bg);transition:transform .15s ease}
+.setl li.drag{transition:none;z-index:5;position:relative;background:var(--card);box-shadow:0 18px 40px rgba(0,0,0,.7);border-radius:10px;outline:1px solid #3a3733}
+.ss-n{font:400 20px var(--serif);color:var(--dim);text-align:center}
+.ss-t{text-decoration:none;min-width:0}
+.ss-b,.ss-d{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15}.ss-b b{font:400 26px/1 var(--serif)}.ss-d>span:first-child{font-size:14px}
+.ss-x{width:40px;height:40px;border-radius:50%;border:0;background:transparent;color:var(--dim);display:flex;align-items:center;justify-content:center}.ss-x:hover{color:var(--ink);background:var(--card)}
+.grip{width:30px;height:46px;border:0;background:transparent;color:var(--dim);display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none}
 .grip svg{fill:currentColor}.grip:active{cursor:grabbing;color:var(--ink)}
+.ss-side{align-self:start}
+.ss-discs{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:18px 14px}
+.ss-empty{margin-top:28px;padding:32px;border:1px dashed #3a3733;border-radius:18px}
+@media(max-width:600px){.setl li{grid-template-columns:26px 40px minmax(0,1fr) 46px 34px;gap:8px}.setl .ss-n,.ss-d{display:none}.setl li>.cv{width:40px!important;height:40px!important}.ss-stats dd{font-size:32px}}
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);max-width:min(92vw,520px);text-align:center;background:var(--ink);color:#0a0a0a;padding:10px 18px;border-radius:999px;font-size:14px;font-weight:500;z-index:90;opacity:0;transition:opacity .25s;pointer-events:none}
 .toast.on{opacity:1}
 @media(min-width:900px){.toast{bottom:32px}}
@@ -150,7 +165,8 @@ body.ob main{max-width:540px;padding:max(4vh,22px) 22px 64px}
 <aside class="side" aria-label="Navigation">
 <a class="brand" href="#bacs">Discollection</a>
 <a class="nav" data-tab="bacs" href="#bacs"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="1"/><path d="M7 8V4h10v4"/></svg>Bacs</a>
-<a class="nav" data-tab="systeme" href="#systeme"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="7" height="18" rx="1"/><rect x="13" y="3" width="7" height="18" rx="1"/><circle cx="7.5" cy="15" r="2"/><circle cx="16.5" cy="15" r="2"/></svg>Système</a>
+<a class="nav" data-tab="notes" href="#notes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>Mes notes</a>
+<a class="nav" data-tab="systeme" href="#systeme"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="7" height="18" rx="1"/><rect x="13" y="3" width="7" height="18" rx="1"/><circle cx="7.5" cy="15" r="2"/><circle cx="16.5" cy="15" r="2"/></svg>Sound system</a>
 <a class="nav" data-tab="profil" href="#profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profil</a>
 <p class="credit">Tempo et tonalité fournis par <a href="https://getsongbpm.com">GetSongBPM.com</a> et Deezer. Collection via Discogs.</p>
 </aside>
@@ -161,7 +177,8 @@ body.ob main{max-width:540px;padding:max(4vh,22px) 22px 64px}
 </div>
 <nav class="tabs" aria-label="Principal">
 <a class="tab" data-tab="bacs" href="#bacs"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="1"/><path d="M7 8V4h10v4"/></svg>Bacs</a>
-<a class="tab" data-tab="systeme" href="#systeme"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="7" height="18" rx="1"/><rect x="13" y="3" width="7" height="18" rx="1"/><circle cx="7.5" cy="15" r="2"/><circle cx="16.5" cy="15" r="2"/></svg>Système</a>
+<a class="tab" data-tab="notes" href="#notes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>Notes</a>
+<a class="tab" data-tab="systeme" href="#systeme"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="7" height="18" rx="1"/><rect x="13" y="3" width="7" height="18" rx="1"/><circle cx="7.5" cy="15" r="2"/><circle cx="16.5" cy="15" r="2"/></svg>Sound system</a>
 <a class="tab" data-tab="profil" href="#profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profil</a>
 </nav>
 <div class="toast" id="toast" role="status"></div>
@@ -244,7 +261,7 @@ let NOTES = {}, LIB = [];
 function enterDemo(){ DEMO_ON = true; if (!LIMITED) ls.set('demo', true); Object.assign(S, { user:'', token:'', gsb:'', audd:'', rangement: ls.get('demoRang', 'genre') }); NOTES = ls.get('notes', null) || JSON.parse(JSON.stringify(SEED)); LIB = DEMO; }
 function leaveDemo(){ DEMO_ON = false; ls.set('demo', false); NOTES = {}; LIB = []; }
 const crateIdx = {};
-const sys = { r:0, min:0 };
+const sys = { r:0, min:0, q:'', sort:'bpm' };
 
 let dbDoc = null, writing = Promise.resolve(), remoteTimer = 0;
 const dirty = new Set();
@@ -630,7 +647,7 @@ function vTitre(id, i){
  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;flex-wrap:wrap"><span class="lab">Ta note</span><div class="stars" role="radiogroup" aria-label="Note sur 5" id="stars"></div></div>
  <label class="field" style="margin-top:20px"><span>Ton ressenti</span><textarea class="in" id="com" placeholder="Ce que ce morceau te fait, quand le passer, avec quoi l’enchaîner…">${esc(n.c || '')}</textarea></label>
  <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
-  <button class="btn" id="set" style="flex:1">${n.set ? '✓ Dans mon système' : 'Ajouter à mon système'}</button>
+  <button class="btn" id="set" style="flex:1">${n.set ? '✓ Dans mon sound system' : 'Ajouter au sound system'}</button>
   ${i > 0 ? `<a class="ico" href="#titre-${esc(id)}-${i - 1}" aria-label="Titre précédent"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>` : ''}
   ${i < r.tr.length - 1 ? `<a class="ico" href="#titre-${esc(id)}-${i + 1}" aria-label="Titre suivant"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></a>` : ''}
  </div>
@@ -639,7 +656,7 @@ function vTitre(id, i){
  drawStars();
  $('#stars').onclick = e => { const b = e.target.closest('button'); if (!b) return; const v = +b.dataset.v; setNote(k, { s: note(k).s === v ? 0 : v }); drawStars(); };
  let ct = 0; $('#com').oninput = e => { clearTimeout(ct); ct = setTimeout(() => setNote(k, { c: e.target.value.trim() }), 600); };
- $('#set').onclick = () => { const v = !note(k).set; setNote(k, { set: v }); $('#set').textContent = v ? '✓ Dans mon système' : 'Ajouter à mon système'; };
+ $('#set').onclick = () => { const v = !note(k).set; setNote(k, { set: v }); $('#set').textContent = v ? '✓ Dans mon sound system' : 'Ajouter au sound system'; };
  const putBpm = (b, src, extra) => {
   if (!b || b < 30 || b > 250) return;
   setNote(k, Object.assign({ b: Math.round(b), src }, extra || {}));
@@ -681,79 +698,138 @@ function vTitre(id, i){
 
 const durSec = d => { const p = String(d || '').trim().split(':').map(Number); if (p.length < 2 || p.some(isNaN)) return 0; return p.reduce((a, v) => a * 60 + v, 0); };
 const fmtDur = s => { const h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60); return h ? `${h} h ${String(m).padStart(2, '0')}` : `${m} min`; };
+const fmtClock = s => { const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = Math.floor(s % 60); return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); };
 function setOrder(){ return ((NOTES['set:order'] || {}).order) || []; }
-function vSysteme(){
- const R = [['Tous',0,999],['60–80',60,80],['80–100',80,100],['100–120',100,120],['120 +',120,999]];
- const [, lo, hi] = R[sys.r];
- const all = allTracks();
- const rows = all.filter(x => (x.n.s || x.n.b)).filter(x => (!x.n.b ? sys.r === 0 : x.n.b >= lo && x.n.b < hi) && (x.n.s || 0) >= sys.min).sort((a, b) => (a.n.b || 999) - (b.n.b || 999));
+function setChosen(){
  const pos = new Map(setOrder().map((k, i) => [k, i]));
  const rank = x => pos.has(x.k) ? pos.get(x.k) : 1e6 + (x.n.b || 999);
- const chosen = all.filter(x => x.n.set).sort((a, b) => rank(a) - rank(b));
+ return allTracks().filter(x => x.n.set).sort((a, b) => rank(a) - rank(b));
+}
+function toggleSet(k){
+ const on = !note(k).set, cur = setChosen().map(x => x.k).filter(x => x !== k);
+ NOTES[k] = Object.assign({}, note(k), { set: on, t: Date.now() });
+ NOTES['set:order'] = { order: on ? [...cur, k] : cur, t: Date.now() };
+ saveNotes([k, 'set:order']);
+ flash(on ? 'Ajouté au sound system' : 'Retiré du sound system');
+}
+let curveObs = null;
+
+/* ---------- Mes notes ---------- */
+function vNotes(){
+ const R = [['Tous',0,999],['60–80',60,80],['80–100',80,100],['100–120',100,120],['120 +',120,999]];
+ const SORT = [['bpm','Par BPM'],['note','Par note'],['recent','Récents']];
+ const [, lo, hi] = R[sys.r], q = norm(sys.q || '');
+ const all = allTracks().filter(x => x.n.s || x.n.b || x.n.c);
+ let rows = all.filter(x => (!x.n.b ? sys.r === 0 : x.n.b >= lo && x.n.b < hi) && (x.n.s || 0) >= sys.min && (!q || norm(x.t.n + ' ' + x.r.a + ' ' + x.r.t).includes(q)));
+ rows.sort(sys.sort === 'note' ? (a, b) => (b.n.s || 0) - (a.n.s || 0) || (a.n.b || 999) - (b.n.b || 999) : sys.sort === 'recent' ? (a, b) => (b.n.t || 0) - (a.n.t || 0) : (a, b) => (a.n.b || 999) - (b.n.b || 999));
+ const inSet = all.filter(x => x.n.set).length;
+ V.innerHTML = `
+ <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
+  <div><p class="lab">${all.filter(x => x.n.s).length} titres notés · ${all.filter(x => x.n.c).length} commentaires</p><h1 style="margin-top:6px">Mes <i class="s">notes</i></h1></div>
+  <a class="btn2" href="#systeme">Sound system${inSet ? ' · ' + inSet : ''}</a>
+ </div>
+ <div class="nfil">
+  <label class="field" style="margin:0"><span class="sr">Chercher un titre</span><input class="in" id="nq" type="search" placeholder="Chercher un titre, un artiste…" value="${esc(sys.q || '')}" autocomplete="off"></label>
+  <div><p class="lab" style="margin-bottom:8px">Tempo</p><div class="pills" role="radiogroup" aria-label="Tempo" id="fr">${R.map(([l], j) => `<button class="pill" role="radio" aria-checked="${j === sys.r}" data-j="${j}">${l}</button>`).join('')}</div></div>
+  <div><p class="lab" style="margin-bottom:8px">Note minimale</p><div class="pills" role="radiogroup" aria-label="Note minimale" id="fs">${[[0,'Toutes'],[3,'★ 3 et +'],[4,'★ 4 et +'],[5,'★ 5']].map(([v, l]) => `<button class="pill" role="radio" aria-checked="${v === sys.min}" data-v="${v}">${l}</button>`).join('')}</div></div>
+  <div><p class="lab" style="margin-bottom:8px">Trier</p><div class="pills" role="radiogroup" aria-label="Tri" id="fo">${SORT.map(([v, l]) => `<button class="pill" role="radio" aria-checked="${v === (sys.sort || 'bpm')}" data-o="${v}">${l}</button>`).join('')}</div></div>
+ </div>
+ <p class="small dim" style="margin:22px 0 8px">${rows.length} titre${rows.length > 1 ? 's' : ''}</p>
+ <ul class="list" id="rows">${rows.map(x => `<li style="display:grid;grid-template-columns:44px 56px minmax(0,1fr) 46px;gap:14px;align-items:center;min-height:72px">
+  ${cover(x.r, 44)}
+  <span style="font:400 30px/1 var(--serif)">${x.n.b ? esc(x.n.b) : '—'}</span>
+  <a href="#titre-${esc(x.r.id)}-${x.i}" style="text-decoration:none"><span class="ell" style="display:block;font-size:16px;font-weight:400">${esc(x.t.n)}</span><span class="ell small mut" style="display:block">${x.n.s ? `<span style="letter-spacing:.1em">${starTxt(x.n.s)}</span> · ` : ''}${esc(x.r.a)} · ${esc(x.r.t)} · ${esc(x.t.p)}${x.t.d ? ' · ' + esc(x.t.d) : ''}</span>${x.n.c ? `<span class="ell small dim" style="display:block;font-style:italic">« ${esc(x.n.c)} »</span>` : ''}</a>
+  <button class="ico ${x.n.set ? 'on' : ''}" data-k="${esc(x.k)}" aria-label="${x.n.set ? 'Retirer' : 'Ajouter'} ${esc(x.t.n)} ${x.n.set ? 'du' : 'au'} sound system">${x.n.set ? '✓' : '+'}</button></li>`).join('') || '<li class="note" style="padding:18px 0">Aucun titre ne correspond. Note des titres depuis tes bacs.</li>'}</ul>`;
+ $('#fr').onclick = e => { const b = e.target.closest('button'); if (b) { sys.r = +b.dataset.j; vNotes(); } };
+ $('#fs').onclick = e => { const b = e.target.closest('button'); if (b) { sys.min = +b.dataset.v; vNotes(); } };
+ $('#fo').onclick = e => { const b = e.target.closest('button'); if (b) { sys.sort = b.dataset.o; vNotes(); } };
+ let qt = 0; $('#nq').oninput = e => { clearTimeout(qt); qt = setTimeout(() => { sys.q = e.target.value; const y = scrollY; vNotes(); scrollTo(0, y); const i = $('#nq'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 250); };
+ $('#rows').onclick = e => { const b = e.target.closest('button[data-k]'); if (!b) return; toggleSet(b.dataset.k); const y = scrollY; vNotes(); scrollTo(0, y); };
+}
+
+/* ---------- Sound system ---------- */
+function vSound(){
+ const chosen = setChosen();
  const bp = chosen.map(x => x.n.b).filter(Boolean), discs = new Map();
  chosen.forEach(x => { if (!discs.has(x.r.id)) discs.set(x.r.id, { r: x.r, p: [] }); discs.get(x.r.id).p.push(x.t.p); });
  const secs = chosen.reduce((a, x) => a + durSec(x.t.d), 0), noDur = chosen.filter(x => !durSec(x.t.d)).length;
- V.innerHTML = `
- <p class="lab">Dans tes titres notés</p><h1 style="margin-top:6px">Préparer un <i class="s">système</i></h1>
- <div class="grid2" style="margin-top:26px">
- <div>
-  <p class="lab" style="margin-bottom:8px">Tempo</p><div class="pills" role="radiogroup" aria-label="Tempo" id="fr">${R.map(([l], j) => `<button class="pill" role="radio" aria-checked="${j === sys.r}" data-j="${j}">${l}</button>`).join('')}</div>
-  <p class="lab" style="margin:14px 0 8px">Note minimale</p><div class="pills" role="radiogroup" aria-label="Note minimale" id="fs">${[[0,'Toutes'],[3,'★ 3 et +'],[4,'★ 4 et +'],[5,'★ 5']].map(([v, l]) => `<button class="pill" role="radio" aria-checked="${v === sys.min}" data-v="${v}">${l}</button>`).join('')}</div>
-  <p class="small dim" style="margin:20px 0 8px">${rows.length} titre${rows.length > 1 ? 's' : ''} correspond${rows.length > 1 ? 'ent' : ''}</p>
-  <ul class="list" id="rows">${rows.map(x => `<li style="display:grid;grid-template-columns:52px minmax(0,1fr) 46px;gap:12px;align-items:center;min-height:68px">
-   <span style="font:400 28px/1 var(--serif)">${x.n.b ? esc(x.n.b) : '—'}</span>
-   <a href="#titre-${esc(x.r.id)}-${x.i}" style="text-decoration:none"><span class="ell" style="display:block;font-size:16px;font-weight:400">${esc(x.t.n)}</span><span class="ell small mut" style="display:block"><span style="letter-spacing:.1em">${starTxt(x.n.s)}</span> ${esc(x.r.t)} · ${esc(x.t.p)}${x.t.d ? ' · ' + esc(x.t.d) : ''}${x.n.c ? ' · « ' + esc(x.n.c) + ' »' : ''}</span></a>
-   <button class="ico ${x.n.set ? 'on' : ''}" data-k="${esc(x.k)}" aria-label="${x.n.set ? 'Retirer' : 'Ajouter'} ${esc(x.t.n)}">${x.n.set ? '✓' : '+'}</button></li>`).join('') || '<li class="note" style="padding:16px 0">Aucun titre noté ne correspond. Note des titres depuis tes bacs.</li>'}</ul>
- </div>
- <aside style="align-self:start;padding:22px;border-radius:16px;background:var(--card);border:1px solid #232120">
-  <h2>Mon système</h2>
-  ${chosen.length ? `<div class="setsum"><div><span class="big">${secs ? fmtDur(secs) : '—'}</span><span class="small dim">durée totale${noDur ? ` · ${noDur} titre${noDur > 1 ? 's' : ''} sans durée` : ''}</span></div><div><span class="big">${chosen.length}</span><span class="small dim">titre${chosen.length > 1 ? 's' : ''}</span></div>${bp.length ? `<div><span class="big">${Math.min(...bp)}–${Math.max(...bp)}</span><span class="small dim">BPM</span></div>` : ''}</div>
-  <p class="note" style="margin:0 0 10px">Glisse les titres par la poignée pour changer l’ordre de passage.</p>` : '<p class="small mut" style="margin:6px 0 16px">Ajoute des titres avec le bouton +.</p>'}
-  <ol class="setl" id="setl">${chosen.map((x, i) => `<li data-k="${esc(x.k)}"><button class="grip" aria-label="Déplacer ${esc(x.t.n)}, position ${i + 1} sur ${chosen.length}. Flèches haut et bas pour déplacer."><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg></button><span class="small dim">${i + 1}</span><span style="font:400 22px/1 var(--serif)">${x.n.b || '—'}</span><span class="ell">${esc(x.t.n)} <span class="small dim">${esc(x.r.t)} · ${esc(x.t.p)}</span></span><span class="small dim">${esc(x.t.d || '')}</span></li>`).join('')}</ol>
-  ${discs.size ? `<p class="lab" style="margin:18px 0 8px">Disques à sortir · ${discs.size}</p><ul style="list-style:none;margin:0;padding:0">${[...discs.values()].map(d => `<li style="display:flex;gap:10px;align-items:center;padding:6px 0">${cover(d.r, 36)}<span class="ell small">${esc(d.r.t)} <span class="dim">· ${esc(d.p.join(', '))}</span></span></li>`).join('')}</ul>
-  <div class="pills" style="margin-top:18px"><button class="btn" id="copy">Copier la liste</button><button class="btn2" id="clear">Vider</button></div>` : ''}
- </aside>
- </div>`;
- $('#fr').onclick = e => { const b = e.target.closest('button'); if (b) { sys.r = +b.dataset.j; vSysteme(); } };
- $('#fs').onclick = e => { const b = e.target.closest('button'); if (b) { sys.min = +b.dataset.v; vSysteme(); } };
- $('#rows').onclick = e => { const b = e.target.closest('button[data-k]'); if (!b) return; const k = b.dataset.k, on = !note(k).set; setNote(k, { set: on }); if (on) { const o = setOrder().filter(x => x !== k && NOTES[x] && NOTES[x].set); const ids = chosen.map(x => x.k); const base = ids.length ? ids : o; NOTES['set:order'] = { order: [...base.filter(x => x !== k), k], t: Date.now() }; saveNotes('set:order'); } vSysteme(); };
- const moveSet = (from, to, focus) => {
-  const keys = chosen.map(x => x.k); const [k] = keys.splice(from, 1); keys.splice(to, 0, k);
-  NOTES['set:order'] = { order: keys, t: Date.now() }; saveNotes('set:order');
-  const y = scrollY; vSysteme(); scrollTo(0, y);
-  if (focus) { const g = document.querySelectorAll('#setl .grip')[to]; if (g) g.focus(); }
- };
- const list = $('#setl');
- if (list) {
-  let drag = null;
-  list.addEventListener('pointerdown', e => {
-   const g = e.target.closest('.grip'); if (!g) return;
-   e.preventDefault(); g.setPointerCapture(e.pointerId);
-   const rows = [...list.children], li = g.closest('li');
-   drag = { li, y0: e.clientY, idx: rows.indexOf(li), rows, mids: rows.map(r => { const b = r.getBoundingClientRect(); return b.top + b.height / 2; }), h: li.getBoundingClientRect().height, to: rows.indexOf(li) };
-   li.classList.add('drag');
-  });
-  list.addEventListener('pointermove', e => {
-   if (!drag) return;
-   const dy = e.clientY - drag.y0, mid = drag.mids[drag.idx] + dy;
-   drag.li.style.transform = `translateY(${dy}px)`;
-   const to = drag.mids.filter((m, i) => i !== drag.idx && m < mid).length;
-   drag.to = to;
-   drag.rows.forEach((r, i) => { if (r === drag.li) return; let s = 0; if (drag.idx < to && i > drag.idx && i <= to) s = -drag.h; if (drag.idx > to && i >= to && i < drag.idx) s = drag.h; r.style.transform = s ? `translateY(${s}px)` : ''; });
-  });
-  const end = () => { if (!drag) return; const { idx, to, rows, li } = drag; drag = null; rows.forEach(r => { r.style.transform = ''; }); li.classList.remove('drag'); if (to !== idx) moveSet(idx, to); };
-  list.addEventListener('pointerup', end); list.addEventListener('pointercancel', end);
-  list.addEventListener('keydown', e => {
-   const g = e.target.closest('.grip'); if (!g) return;
-   const i = [...list.children].indexOf(g.closest('li'));
-   if (e.key === 'ArrowUp' && i > 0) { e.preventDefault(); moveSet(i, i - 1, true); }
-   if (e.key === 'ArrowDown' && i < list.children.length - 1) { e.preventDefault(); moveSet(i, i + 1, true); }
-  });
+ let acc = 0, approx = false;
+ const starts = chosen.map(x => { const s = acc; const d = durSec(x.t.d); if (!d) approx = true; acc += d || 240; return { s, approx }; });
+ if (curveObs) { curveObs.disconnect(); curveObs = null; }
+ if (!chosen.length) {
+  V.innerHTML = `<p class="lab">Ton set</p><h1 style="margin-top:6px">Sound <i class="s">system</i></h1>
+  <div class="ss-empty"><p class="mut" style="margin:0;max-width:44ch">Ton set est vide. Choisis tes titres dans tes notes avec le bouton +, puis range-les ici dans l’ordre de passage.</p><a class="btn" href="#notes" style="margin-top:22px">Choisir dans mes notes</a></div>`;
+  return;
  }
- const cp = $('#copy');
- if (cp) cp.onclick = async () => { const txt = `Système — ${chosen.length} titres${secs ? ' · ' + fmtDur(secs) : ''}\n` + chosen.map((x, i) => `${i + 1}. ${x.n.b || '—'} BPM · ${x.t.n} — ${x.r.a} (${x.r.t}, ${x.t.p})${x.t.d ? ' · ' + x.t.d : ''}${x.n.c ? ' · ' + x.n.c : ''}`).join('\n'); try { await navigator.clipboard.writeText(txt); flash('Liste copiée'); } catch (e) { flash('Copie refusée par le navigateur'); } };
+ V.innerHTML = `
+ <div class="ss-head">
+  <div><p class="lab">Ton set · ${chosen.length} titre${chosen.length > 1 ? 's' : ''}</p><h1 style="margin-top:6px">Sound <i class="s">system</i></h1></div>
+  <dl class="ss-stats">
+   <div><dt>durée${noDur ? ` · ${noDur} sans durée` : ''}</dt><dd>${secs ? fmtDur(secs) : '—'}</dd></div>
+   <div><dt>BPM</dt><dd>${bp.length ? Math.min(...bp) + '–' + Math.max(...bp) : '—'}</dd></div>
+   <div><dt>disques</dt><dd>${discs.size}</dd></div>
+  </dl>
+ </div>
+ ${bp.length > 1 ? `<figure class="ss-curve" aria-label="Courbe du tempo, de ${bp[0]} à ${bp[bp.length - 1]} BPM"><svg id="curve" role="img" aria-hidden="true"></svg></figure>` : ''}
+ <div class="ss-grid">
+  <section aria-label="Ordre de passage">
+   <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:10px"><h2>Ordre de passage</h2><a class="small mut" href="#notes">+ Ajouter des titres</a></div>
+   <p class="note" style="margin:0 0 10px">Glisse un titre par sa poignée pour changer l’ordre. Au clavier : flèches haut et bas sur la poignée.</p>
+   <ol class="setl" id="setl">${chosen.map((x, i) => { const prev = i ? chosen[i - 1].n.b : 0, dlt = prev && x.n.b ? x.n.b - prev : 0; return `<li data-k="${esc(x.k)}">
+    <button class="grip" aria-label="Déplacer ${esc(x.t.n)}, position ${i + 1} sur ${chosen.length}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg></button>
+    <span class="ss-n">${i + 1}</span>
+    ${cover(x.r, 46)}
+    <a class="ss-t" href="#titre-${esc(x.r.id)}-${x.i}"><span class="ell" style="display:block;font-size:16px;font-weight:400">${esc(x.t.n)}</span><span class="ell small mut" style="display:block">${esc(x.r.a)} · ${esc(x.r.t)} · face ${esc(x.t.p)}</span></a>
+    <span class="ss-b"><b>${x.n.b || '—'}</b><span class="small dim">${dlt ? (dlt > 0 ? '+' : '') + dlt : 'BPM'}</span></span>
+    <span class="ss-d"><span>${esc(x.t.d || '—')}</span><span class="small dim">${starts[i].approx ? '≈ ' : ''}à ${fmtClock(starts[i].s)}</span></span>
+    <button class="ss-x" data-k="${esc(x.k)}" aria-label="Retirer ${esc(x.t.n)} du sound system"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+   </li>`; }).join('')}</ol>
+  </section>
+  <aside class="ss-side">
+   <h2>Disques à sortir</h2>
+   <p class="small dim" style="margin:4px 0 14px">Dans l’ordre où tu en as besoin.</p>
+   <ul class="ss-discs">${[...discs.values()].map(d => `<li>${cover(d.r, 120, 'width:100%;height:auto;aspect-ratio:1;box-shadow:0 14px 30px rgba(0,0,0,.6)')}<span class="ell" style="display:block;margin-top:8px;font:400 17px/1.15 var(--serif)">${esc(d.r.t)}</span><span class="ell small dim" style="display:block">face ${esc(d.p.join(', '))}</span></li>`).join('')}</ul>
+   <div class="pills" style="margin-top:22px"><button class="btn" id="copy">Copier la liste</button><button class="btn2" id="clear">Vider le set</button></div>
+  </aside>
+ </div>`;
+ const svg = $('#curve');
+ if (svg) {
+  const drawCurve = () => {
+   const W = svg.clientWidth, H = svg.clientHeight; if (!W) return;
+   const pts = chosen.map((x, i) => ({ i, b: x.n.b })).filter(p => p.b);
+   const mn = Math.min(...pts.map(p => p.b)) - 4, mx = Math.max(...pts.map(p => p.b)) + 4, pad = 24;
+   const X = i => pad + (chosen.length > 1 ? i * (W - pad * 2) / (chosen.length - 1) : (W - pad * 2) / 2), Y = b => H - 28 - (b - mn) / (mx - mn || 1) * (H - 56);
+   const path = pts.map((p, j) => (j ? 'L' : 'M') + X(p.i).toFixed(1) + ' ' + Y(p.b).toFixed(1)).join(' ');
+   const small = W < 520;
+   svg.innerHTML = `<path d="${path}" fill="none" stroke="#efe6d2" stroke-width="1.5" stroke-linejoin="round"/>` + pts.map(p => `<circle cx="${X(p.i)}" cy="${Y(p.b)}" r="4" fill="#0a0a0a" stroke="#efe6d2" stroke-width="1.5"/>${small ? '' : `<text x="${X(p.i)}" y="${Y(p.b) - 12}" text-anchor="middle" fill="#a89f8e" font-size="12">${p.b}</text>`}`).join('') + chosen.map((x, i) => `<text x="${X(i)}" y="${H - 6}" text-anchor="middle" fill="#6b655b" font-size="11">${i + 1}</text>`).join('');
+  };
+  curveObs = new ResizeObserver(drawCurve); curveObs.observe(svg);
+ }
+ const rerender = (focusIdx) => { const y = scrollY; vSound(); scrollTo(0, y); if (focusIdx != null) { const g = document.querySelectorAll('#setl .grip')[focusIdx]; if (g) g.focus(); } };
+ const moveSet = (from, to, focus) => { const keys = chosen.map(x => x.k); const [k] = keys.splice(from, 1); keys.splice(to, 0, k); NOTES['set:order'] = { order: keys, t: Date.now() }; saveNotes('set:order'); rerender(focus ? to : null); };
+ const list = $('#setl');
+ let drag = null;
+ list.addEventListener('pointerdown', e => {
+  const g = e.target.closest('.grip'); if (!g) return;
+  e.preventDefault(); g.setPointerCapture(e.pointerId);
+  const rows = [...list.children], li = g.closest('li');
+  drag = { li, y0: e.clientY, idx: rows.indexOf(li), rows, mids: rows.map(r => { const b = r.getBoundingClientRect(); return b.top + b.height / 2; }), h: li.getBoundingClientRect().height, to: rows.indexOf(li) };
+  li.classList.add('drag');
+ });
+ list.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const dy = e.clientY - drag.y0, mid = drag.mids[drag.idx] + dy;
+  drag.li.style.transform = `translateY(${dy}px)`;
+  const to = drag.mids.filter((m, i) => i !== drag.idx && m < mid).length; drag.to = to;
+  drag.rows.forEach((r, i) => { if (r === drag.li) return; let s = 0; if (drag.idx < to && i > drag.idx && i <= to) s = -drag.h; if (drag.idx > to && i >= to && i < drag.idx) s = drag.h; r.style.transform = s ? `translateY(${s}px)` : ''; });
+ });
+ const end = () => { if (!drag) return; const { idx, to, rows, li } = drag; drag = null; rows.forEach(r => { r.style.transform = ''; }); li.classList.remove('drag'); if (to !== idx) moveSet(idx, to); };
+ list.addEventListener('pointerup', end); list.addEventListener('pointercancel', end);
+ list.addEventListener('keydown', e => { const g = e.target.closest('.grip'); if (!g) return; const i = [...list.children].indexOf(g.closest('li')); if (e.key === 'ArrowUp' && i > 0) { e.preventDefault(); moveSet(i, i - 1, true); } if (e.key === 'ArrowDown' && i < list.children.length - 1) { e.preventDefault(); moveSet(i, i + 1, true); } });
+ list.addEventListener('click', e => { const x = e.target.closest('.ss-x'); if (!x) return; toggleSet(x.dataset.k); rerender(); });
+ $('#copy').onclick = async () => { const txt = `Sound system — ${chosen.length} titres${secs ? ' · ' + fmtDur(secs) : ''}\n` + chosen.map((x, i) => `${i + 1}. ${x.n.b || '—'} BPM · ${x.t.n} — ${x.r.a} (${x.r.t}, ${x.t.p})${x.t.d ? ' · ' + x.t.d : ''}${x.n.c ? ' · ' + x.n.c : ''}`).join('\n') + `\n\nDisques à sortir : ` + [...discs.values()].map(d => `${d.r.t} (${d.p.join(', ')})`).join(' · '); try { await navigator.clipboard.writeText(txt); flash('Liste copiée'); } catch (e) { flash('Copie refusée par le navigateur'); } };
  const cl = $('#clear');
- if (cl) cl.onclick = () => { if (cl.dataset.ok) { chosen.forEach(x => { NOTES[x.k] = Object.assign({}, x.n, { set: false, t: Date.now() }); }); NOTES['set:order'] = { order: [], t: Date.now() }; saveNotes([...chosen.map(x => x.k), 'set:order']); vSysteme(); } else { cl.dataset.ok = 1; cl.textContent = 'Confirmer'; } };
+ cl.onclick = () => { if (!cl.dataset.ok) { cl.dataset.ok = 1; cl.textContent = 'Confirmer'; return; } chosen.forEach(x => { NOTES[x.k] = Object.assign({}, x.n, { set: false, t: Date.now() }); }); NOTES['set:order'] = { order: [], t: Date.now() }; saveNotes([...chosen.map(x => x.k), 'set:order']); vSound(); };
 }
 
 /* ---------- Arrivée : accueil, compte, connexion ---------- */
@@ -1035,9 +1111,9 @@ function route(){
  if (h !== location.hash.slice(1)) history.replaceState(null, '', '#' + h);
  const flow = OB.includes(h) || STEPS.includes(h);
  document.body.classList.toggle('ob', flow);
- const tab = h.startsWith('systeme') ? 'systeme' : h.startsWith('profil') ? 'profil' : 'bacs';
+ const tab = h.startsWith('systeme') ? 'systeme' : h === 'notes' ? 'notes' : h.startsWith('profil') ? 'profil' : 'bacs';
  document.querySelectorAll('[data-tab]').forEach(a => { if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
- window.scrollTo(0, 0); bacGo = null;
+ window.scrollTo(0, 0); bacGo = null; if (curveObs) { curveObs.disconnect(); curveObs = null; }
  if (h === 'bienvenue') vWelcome();
  else if (h === 'inscription') sb ? vSignup() : vWelcome();
  else if (h === 'connexion') sb ? vLogin() : vWelcome();
@@ -1046,7 +1122,8 @@ function route(){
  else if (h === 'nouveau-mdp') vNewPass();
  else if (h === 'etape-discogs') vObDiscogs();
  else if (h === 'etape-rangement') vObRangement();
- else if (h === 'systeme') vSysteme();
+ else if (h === 'systeme') vSound();
+ else if (h === 'notes') vNotes();
  else if (h === 'profil') vProfil();
  else if (m = h.match(/^bac-([a-z0-9-]+)$/)) vBac(m[1]);
  else if (m = h.match(/^disque-([a-z0-9]+)$/i)) vDisque(m[1]);
